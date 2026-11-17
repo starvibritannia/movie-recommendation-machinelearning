@@ -1,0 +1,9 @@
+fastapi==0.133.1
+uvicorn[standard]==0.41.0
+pydantic>=2.7
+
+# Dipakai Tahap 2 & 3 (preprocessing + modeling), belum dipakai stub ini.
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.5
+joblib>=1.4

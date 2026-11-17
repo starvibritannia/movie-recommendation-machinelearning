@@ -1,0 +1,29 @@
+# ================= Flutter =================
+aplikasi/build/
+aplikasi/.dart_tool/
+aplikasi/.idea/
+aplikasi/*.iml
+aplikasi/.metadata
+aplikasi/.flutter-plugins-dependencies
+aplikasi/android/.gradle/
+aplikasi/android/local.properties
+aplikasi/ios/Flutter/Generated.xcconfig
+aplikasi/ios/Pods/
+aplikasi/web/.dart_tool/
+aplikasi/ephemeral/
+
+# ================= Python =================
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ================= IDE / OS =================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log

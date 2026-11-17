@@ -1,0 +1,179 @@
+openapi: "3.0.3"
+info:
+  title: FilmMatch Recommendation API
+  version: "1.0.0"
+  description: >
+    API backend FastAPI untuk sistem rekomendasi film 2-tahap (clustering +
+    cosine similarity). Kontrak ini sejalan dengan docs/api_contract.md.
+servers:
+  - url: http://10.0.2.2:8000
+    description: Android emulator ke host
+  - url: http://localhost:8000
+    description: iOS simulator
+
+paths:
+  /health:
+    get:
+      summary: Cek server dan status model
+      responses:
+        "200":
+          description: Server hidup
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /recommend:
+    post:
+      summary: Minta daftar film rekomendasi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendRequest"
+      responses:
+        "200":
+          description: Daftar rekomendasi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          description: Validasi gagal (FastAPI default)
+        "503":
+          description: Model belum dimuat
+
+components:
+  responses:
+    BadRequest:
+      description: Kriteria tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    RecommendRequest:
+      type: object
+      required:
+        - genres
+        - min_rating
+        - runtime_min
+        - runtime_max
+        - year_start
+        - year_end
+        - keyword
+        - top_n
+      properties:
+        genres:
+          type: array
+          items:
+            type: string
+          example: ["Action", "Sci-Fi"]
+        min_rating:
+          type: number
+          minimum: 0
+          maximum: 10
+          example: 7.5
+        runtime_min:
+          type: integer
+          example: 90
+        runtime_max:
+          type: integer
+          example: 150
+        year_start:
+          type: integer
+          example: 2015
+        year_end:
+          type: integer
+          example: 2024
+        keyword:
+          type: string
+          nullable: true
+          example: space
+        top_n:
+          type: integer
+          minimum: 1
+          maximum: 50
+          example: 10
+
+    Movie:
+      type: object
+      properties:
+        movie_id:
+          type: string
+        movie_name:
+          type: string
+        year:
+          type: integer
+          nullable: true
+        certificate:
+          type: string
+          example: PG-13
+        runtime:
+          type: integer
+          nullable: true
+        genre:
+          type: array
+          items:
+            type: string
+        rating:
+          type: number
+          nullable: true
+        votes:
+          type: integer
+          nullable: true
+        description:
+          type: string
+        director:
+          type: string
+        star:
+          type: array
+          items:
+            type: string
+        match_percent:
+          type: number
+          nullable: true
+        cluster_label:
+          type: integer
+          nullable: true
+
+    RecommendResponse:
+      type: object
+      properties:
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Movie"
+        predicted_cluster:
+          type: integer
+          nullable: true
+        total_candidates:
+          type: integer
+          nullable: true
+        elapsed_ms:
+          type: number
+          nullable: true
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        model_loaded:
+          type: boolean
+        model_name:
+          type: string
+          example: kmeans
+        cluster_count:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
