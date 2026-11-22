@@ -16,7 +16,10 @@ def test_health():
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok"
-    assert body["model_loaded"] is False
+    # model_bundle.joblib ada -> model asli termuat
+    assert body["model_loaded"] is True
+    assert body["model_name"] in {"K-Means", "Agglomerative", "DBSCAN"}
+    assert body["cluster_count"] >= 2
 
 
 def test_recommend_default():
@@ -68,10 +71,14 @@ def test_recommend_dengan_filter_genre():
 
 
 def test_recommend_keyword():
-    response = client.post("/recommend", json={"keyword": "dream"})
+    response = client.post("/recommend", json={"keyword": "dream", "top_n": 5})
     assert response.status_code == 200
     body = response.json()
     assert len(body["recommendations"]) > 0
+    # keyword harus muncul di judul atau sinopsis
+    for movie in body["recommendations"]:
+        teks = (movie["movie_name"] + " " + movie["description"]).lower()
+        assert "dream" in teks
 
 
 def test_validasi_range_tahun_terbalik():

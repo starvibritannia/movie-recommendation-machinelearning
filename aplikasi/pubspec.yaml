@@ -69,6 +69,7 @@ flutter:
   # Data dummy buat ngisi UI sebelum backend FastAPI siap
   assets:
     - assets/mock/
+    - assets/logo/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

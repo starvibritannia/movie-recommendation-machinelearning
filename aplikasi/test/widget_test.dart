@@ -1,21 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:film_recommendation/core/constants/app_strings.dart';
-import 'package:film_recommendation/data/datasources/recommendation_local_datasource.dart';
-import 'package:film_recommendation/data/datasources/recommendation_remote_datasource.dart';
-import 'package:film_recommendation/data/datasources/watchlist_local_datasource.dart';
 import 'package:film_recommendation/data/models/movie_model.dart';
 import 'package:film_recommendation/data/models/recommendation_response.dart';
-import 'package:film_recommendation/data/repositories/recommendation_repository_impl.dart';
 import 'package:film_recommendation/domain/entities/recommendation_criteria.dart';
-import 'package:film_recommendation/domain/repositories/recommendation_repository.dart';
-import 'package:film_recommendation/presentation/pages/main_shell.dart';
-import 'package:film_recommendation/presentation/providers/recommendation_provider.dart';
-import 'package:film_recommendation/presentation/providers/trending_provider.dart';
-import 'package:film_recommendation/presentation/providers/watchlist_provider.dart';
+import 'package:film_recommendation/presentation/widgets/glass_nav_bar.dart';
 
 void main() {
   group('RecommendationCriteria', () {
@@ -120,41 +110,18 @@ void main() {
     expect(AppStrings.availableGenres, contains('Sci-Fi'));
   });
 
-  testWidgets('bottom navigation punya 3 tab', (tester) async {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-
-    final localDataSource = RecommendationLocalDataSource();
-    final watchlistDataSource = WatchlistLocalDataSource();
-    final RecommendationRepository repository = RecommendationRepositoryImpl(
-      remoteDataSource: RecommendationRemoteDataSource(),
-      localDataSource: localDataSource,
-    );
-
+  testWidgets('bottom navigation punya 2 tab', (tester) async {
     await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          Provider<RecommendationLocalDataSource>.value(value: localDataSource),
-          Provider<WatchlistLocalDataSource>.value(value: watchlistDataSource),
-          ChangeNotifierProvider(
-            create: (_) => RecommendationProvider(repository: repository),
-          ),
-          ChangeNotifierProvider(
-            create: (_) => TrendingProvider(localDataSource: localDataSource),
-          ),
-          ChangeNotifierProvider(
-            create: (_) =>
-                WatchlistProvider(dataSource: watchlistDataSource)..load(),
-          ),
-        ],
-        child: const MaterialApp(home: MainShell()),
+      MaterialApp(
+        home: Scaffold(
+          bottomNavigationBar: GlassNavBar(currentIndex: 0, onTap: (_) {}),
+        ),
       ),
     );
 
-    await tester.pump();
-
-    expect(find.text(AppStrings.tabTrending), findsWidgets);
-    expect(find.text(AppStrings.tabDiscover), findsWidgets);
-    expect(find.text(AppStrings.tabWatchlist), findsWidgets);
+    expect(find.text(AppStrings.tabMascot), findsOneWidget);
+    expect(find.text(AppStrings.tabWatchlist), findsOneWidget);
+    expect(find.byIcon(Icons.smart_toy), findsOneWidget);
+    expect(find.byIcon(Icons.bookmark_border), findsOneWidget);
   });
 }

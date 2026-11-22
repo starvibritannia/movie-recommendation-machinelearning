@@ -7,6 +7,7 @@ import '../../core/utils/formatters.dart';
 import '../../domain/entities/movie.dart';
 import '../providers/recommendation_provider.dart';
 import '../providers/watchlist_provider.dart';
+import '../utils/watchlist_toggler.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/match_badge.dart';
 import '../widgets/movie_card.dart';
@@ -26,6 +27,8 @@ class ResultsPage extends StatelessWidget {
   }
 
   Widget _buildBody(BuildContext context, RecommendationProvider provider) {
+    final watchlist = context.watch<WatchlistProvider>();
+
     if (provider.isLoading) {
       return const Center(
         child: Column(
@@ -76,6 +79,8 @@ class ResultsPage extends StatelessWidget {
               return MovieCard(
                 movie: movie,
                 rank: index + 1,
+                isSaved: watchlist.isSaved(movie.movieId),
+                onToggleBookmark: () => toggleWatchlist(context, movie),
                 onTap: () => _openDetail(context, movie),
               );
             },
@@ -208,18 +213,7 @@ class DetailPage extends StatelessWidget {
 
   /// Tambah/hapus film dari watchlist, lalu kasih feedback ke user.
   void _toggleBookmark(BuildContext context, Movie movie) {
-    final provider = context.read<WatchlistProvider>();
-    final wasSaved = provider.isSaved(movie.movieId);
-    provider.toggle(movie);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          wasSaved ? AppStrings.watchlistRemoved : AppStrings.watchlistSaved,
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    toggleWatchlist(context, movie);
   }
 }
 

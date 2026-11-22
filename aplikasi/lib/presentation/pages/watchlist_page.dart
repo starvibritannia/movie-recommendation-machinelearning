@@ -6,9 +6,10 @@ import '../../core/constants/app_layout.dart';
 import '../../core/theme/app_colors.dart';
 import '../../domain/entities/movie.dart';
 import '../providers/watchlist_provider.dart';
+import '../utils/watchlist_toggler.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/movie_card.dart';
-import 'discover_page.dart';
+import 'mascot_page.dart';
 import 'results_page.dart';
 
 /// Tab 3: koleksi film yang mau ditonton user (watchlist).
@@ -54,9 +55,9 @@ class WatchlistPage extends StatelessWidget {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DiscoverPage()),
-                  );
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const MascotPage()));
                 },
                 child: const Text('Cari film dulu'),
               ),
@@ -102,6 +103,8 @@ class WatchlistPage extends StatelessWidget {
                 child: MovieCard(
                   movie: movie,
                   rank: index + 1,
+                  isSaved: true,
+                  onToggleBookmark: () => toggleWatchlist(context, movie),
                   onTap: () => _openDetail(context, movie),
                 ),
               );

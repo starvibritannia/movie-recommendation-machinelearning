@@ -8,7 +8,6 @@ import 'data/datasources/watchlist_local_datasource.dart';
 import 'data/repositories/recommendation_repository_impl.dart';
 import 'domain/repositories/recommendation_repository.dart';
 import 'presentation/providers/recommendation_provider.dart';
-import 'presentation/providers/trending_provider.dart';
 import 'presentation/providers/watchlist_provider.dart';
 
 void main() {
@@ -42,9 +41,6 @@ class FilmRecommendationApp extends StatelessWidget {
         // State halaman.
         ChangeNotifierProvider(
           create: (_) => RecommendationProvider(repository: repository),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => TrendingProvider(localDataSource: localDataSource),
         ),
         ChangeNotifierProvider(
           create: (_) =>

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'discover_page.dart';
-import 'trending_page.dart';
+import '../providers/watchlist_provider.dart';
+import 'mascot_page.dart';
 import 'watchlist_page.dart';
 import '../widgets/glass_nav_bar.dart';
 
-/// Kerangka aplikasi: 3 tab di bawah (Trending, Discover, Watchlist).
+/// Kerangka aplikasi: 2 tab di bawah (Maskot, Watchlist).
 ///
 /// Pakai IndexedStack supaya state tiap tab (posisi scroll, isi watchlist,
-/// isi form filter) nggak hilang saat user pindah-pindah tab.
+/// progres ngobrol sama maskot) nggak hilang saat user pindah-pindah tab.
 /// Nav bar sengaja melayang (extendBody) supaya konten lewat di bawahnya dan
 /// panel kacanya tembus pandang, sesuai referensi UI 3.
 class MainShell extends StatefulWidget {
@@ -21,14 +22,12 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  static const List<Widget> _pages = [
-    TrendingPage(),
-    DiscoverPage(),
-    WatchlistPage(),
-  ];
+  static const List<Widget> _pages = [MascotPage(), WatchlistPage()];
 
   @override
   Widget build(BuildContext context) {
+    final watchlist = context.watch<WatchlistProvider>();
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBody: true,
@@ -36,6 +35,7 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: GlassNavBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
+        watchlistCount: watchlist.count,
       ),
     );
   }

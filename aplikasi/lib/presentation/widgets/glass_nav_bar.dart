@@ -11,22 +11,21 @@ class GlassNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
+  /// Jumlah isi watchlist, ditampilkan sebagai badge angka di tab Watchlist.
+  final int watchlistCount;
+
   const GlassNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.watchlistCount = 0,
   });
 
   static const List<_NavItemData> _items = [
     _NavItemData(
-      icon: Icons.local_fire_department_outlined,
-      activeIcon: Icons.local_fire_department,
-      label: 'Trending',
-    ),
-    _NavItemData(
-      icon: Icons.explore_outlined,
-      activeIcon: Icons.explore,
-      label: 'Discover',
+      icon: Icons.smart_toy_outlined,
+      activeIcon: Icons.smart_toy,
+      label: 'Maskot',
     ),
     _NavItemData(
       icon: Icons.bookmark_border,
@@ -70,6 +69,7 @@ class GlassNavBar extends StatelessWidget {
                   _NavItem(
                     data: _items[i],
                     selected: i == currentIndex,
+                    badgeCount: i == 1 ? watchlistCount : 0,
                     onTap: () => onTap(i),
                   ),
               ],
@@ -96,12 +96,14 @@ class _NavItemData {
 class _NavItem extends StatelessWidget {
   final _NavItemData data;
   final bool selected;
+  final int badgeCount;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.data,
     required this.selected,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   @override
@@ -114,16 +116,57 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
-              decoration: BoxDecoration(
-                color: selected
-                    ? AppColors.accent.withValues(alpha: 0.18)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(data.activeIcon, color: color, size: 24),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.accent.withValues(alpha: 0.18)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    selected ? data.activeIcon : data.icon,
+                    color: color,
+                    size: 24,
+                  ),
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    top: -5,
+                    right: -10,
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.backgroundAlt,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        '$badgeCount',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(

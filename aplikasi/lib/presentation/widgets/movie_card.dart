@@ -15,11 +15,19 @@ class MovieCard extends StatelessWidget {
   final int rank;
   final VoidCallback? onTap;
 
+  /// Status watchlist (dipakai di kartu rekomendasi).
+  final bool isSaved;
+
+  /// Kalau diisi, kartu menampilkan tombol bookmark.
+  final VoidCallback? onToggleBookmark;
+
   const MovieCard({
     super.key,
     required this.movie,
     required this.rank,
     this.onTap,
+    this.isSaved = false,
+    this.onToggleBookmark,
   });
 
   @override
@@ -86,6 +94,10 @@ class MovieCard extends StatelessWidget {
                     if (movie.clusterLabel != null)
                       _ClusterBadge(label: movie.clusterLabel!),
                     const Spacer(),
+                    if (onToggleBookmark != null) ...[
+                      _BookmarkButton(saved: isSaved, onTap: onToggleBookmark!),
+                      const SizedBox(width: 8),
+                    ],
                     const Icon(Icons.star, size: 16, color: AppColors.accent),
                     const SizedBox(width: 4),
                     Text(
@@ -98,6 +110,35 @@ class MovieCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Tombol bookmark kecil di kartu film, dengan animasi membesar pas aktif.
+class _BookmarkButton extends StatelessWidget {
+  final bool saved;
+  final VoidCallback onTap;
+
+  const _BookmarkButton({required this.saved, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: AnimatedScale(
+          scale: saved ? 1.2 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutBack,
+          child: Icon(
+            saved ? Icons.bookmark : Icons.bookmark_border,
+            size: 20,
+            color: saved ? AppColors.accent : AppColors.textSecondary,
+          ),
+        ),
       ),
     );
   }

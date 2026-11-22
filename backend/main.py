@@ -14,6 +14,8 @@ Buka docs interaktif:
     http://127.0.0.1:8000/docs
 """
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,11 +26,15 @@ from app.schemas import (
     RecommendResponse,
 )
 
-# Data dummy lokal. Nanti diganti baca dari model .pkl + katalog film asli.
+# Katalog dummy lokal. Kalau bundle model ada, katalog asli otomatis dipakai.
 MOVIES_PATH = "app/data/movies.json"
+BUNDLE_PATH = Path(__file__).resolve().parent / "app" / "data" / "model_bundle.joblib"
 
 # Dipakai sederhana dulu: satu objek recommender global.
-recommender = Recommender(MOVIES_PATH)
+recommender = Recommender(
+    MOVIES_PATH,
+    bundle_path=str(BUNDLE_PATH) if BUNDLE_PATH.exists() else None,
+)
 
 app = FastAPI(
     title="FilmMatch Recommendation API",

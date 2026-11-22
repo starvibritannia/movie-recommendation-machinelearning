@@ -20,6 +20,20 @@ __pycache__/
 venv/
 env/
 
+# ================= Data & model besar =================
+# Dataset (130 MB) dan model terlatih (50 MB) tidak dimasukkan ke git.
+# Unduh ulang dengan script di modeling/requirements.txt + tahap 1 PROGRESS.md.
+data/raw/*.csv
+data/raw/*.zip
+data/processed/*.csv
+data/processed/*.npy
+data/processed/*.joblib
+modeling/models/*.joblib
+modeling/models/*.npy
+backend/app/data/model_bundle.joblib
+backend/app/data/catalog.json
+*.log
+
 # ================= IDE / OS =================
 .vscode/
 .idea/

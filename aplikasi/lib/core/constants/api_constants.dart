@@ -6,11 +6,12 @@ class ApiConstants {
   ApiConstants._();
 
   // ----------------------------------------------------------------------------
-  // Android emulator: 10.0.2.2 = localhost di mesin host (komputer kamu)
-  // iOS simulator  : localhost
-  // HP fisik        : IP lokal komputer, contoh http://192.168.1.5:8000
+  // HP fisik (uji coba sekarang): satu Wi-Fi dengan komputer ini.
+  // Android emulator : 10.0.2.2 = localhost di mesin host.
+  // iOS simulator    : localhost
+  // Kalau IP komputer berubah, ganti di sini lalu build ulang.
   // ----------------------------------------------------------------------------
-  static const String baseUrl = 'http://10.0.2.2:8000';
+  static const String baseUrl = 'http://192.168.1.7:8000';
 
   /// Endpoint health check, dipakai buat tahu server FastAPI hidup atau tidak.
   static const String healthEndpoint = '/health';

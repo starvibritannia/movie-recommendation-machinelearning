@@ -51,11 +51,13 @@ flutter run
 
 - [x] Proposal, panduan, studi literatur
 - [x] Kontrak API
-- [x] Aplikasi Flutter (UI, 3 tab, watchlist lokal)
-- [x] Backend FastAPI (stub, validasi, test)
-- [ ] EDA & preprocessing dataset (Tahap 2)
-- [ ] Modeling 3 algoritma clustering (Tahap 3)
-- [ ] Integrasi model .pkl ke backend
+- [x] Dataset: unduh 16 CSV Kaggle, gabung + dedup (368.300 -> 243.197)
+- [x] EDA + preprocessing (127.273 film, 229 fitur incl. TF-IDF)
+- [x] Modeling 3 algoritma clustering + evaluasi (split 80/20, pemenang: K-Means k=2)
+- [x] TF-IDF sinopsis aktif (200 fitur) sesuai panduan Fase B
+- [x] Backend FastAPI (model asli, cosine di dalam klaster, 7 test lolos)
+- [x] Aplikasi Flutter (maskot TV custom + 2 tab: Maskot & Watchlist)
+- [ ] Uji end-to-end di HP/emulator
 - [ ] PPT laporan (A-O) & video demo
 
 Detail lengkap ada di `Progress/PROGRESS.md`.

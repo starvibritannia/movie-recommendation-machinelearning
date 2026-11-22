@@ -2,7 +2,7 @@
 class AppStrings {
   AppStrings._();
 
-  static const String appName = 'FilmMatch';
+  static const String appName = 'NeVie';
   static const String tagline =
       'Temukan film yang paling cocok dengan selera kamu';
 
@@ -39,9 +39,42 @@ class AppStrings {
   ];
 
   // Label bottom navigation
-  static const String tabTrending = 'Trending';
-  static const String tabDiscover = 'Discover';
+  static const String tabMascot = 'Maskot';
   static const String tabWatchlist = 'Watchlist';
+
+  // ----------------------------------------------------------------------------
+  // Teks percakapan maskot (halaman utama).
+  // ----------------------------------------------------------------------------
+  static const String mascotGreeting =
+      'Hai! Aku TonTon, maskot NeVie. Hari ini mau nonton apa nih?';
+  static const String mascotInvite = 'Cariin Film dong!';
+  static const String mascotTapInvite = 'Ketik tombolnya, yuk!';
+  static const String mascotAskGenre =
+      'Pilih genre yang kamu suka, boleh lebih dari satu ya.';
+  static const String mascotGenreConfirm = 'Oke, lanjut!';
+  static const String mascotAbsorb = 'Aku serap yang kamu pilih ya...';
+  static const String mascotSlidersTitle = 'Atur selera kamu';
+  static const String mascotSliderConfirm = 'Siap, lanjut!';
+  static const String mascotKeywordAsk =
+      'Terakhir, ketik tema atau kata kunci filmnya...';
+  static const String mascotAskRating =
+      'Oke. Nah, rating minimal berapa yang kamu mau?';
+  static const String mascotAskRuntime =
+      'Berapa lama durasi film yang pas buat kamu?';
+  static const String mascotAskYear =
+      'Film dari rentang tahun berapa yang kamu cari?';
+  static const String mascotAskExtra =
+      'Terakhir, mau berapa rekomendasi dan ada kata kunci khusus?';
+  static const String mascotThinking =
+      'Hmm, biar aku mikir dan cariin yang paling cocok...';
+  static const String mascotDone = 'Nih hasilnya! Pilih yang paling kabari.';
+  static const String mascotEmpty =
+      'Aduh, nggak ada yang cocok. Coba longgarkan filter kamu ya.';
+  static const String mascotNext = 'Lanjut';
+  static const String mascotBack = 'Kembali';
+  static const String mascotSearch = 'Cariin dong';
+  static const String mascotAgain = 'Cari lagi';
+  static const String mascotCredit = 'Maskot TV orisinal NeVie';
 
   // Label halaman trending
   static const String trendingTitle = 'Trending Sekarang';

@@ -10,7 +10,7 @@ class MovieApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FilmMatch',
+      title: 'NeVie',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark(),
       home: const SplashPage(),
