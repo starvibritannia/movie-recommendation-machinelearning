@@ -1,0 +1,93 @@
+{
+  "n_baris": 243197,
+  "n_kolom": 15,
+  "n_genre_unik": 27,
+  "missing": {
+    "gross(in $)": 231195,
+    "certificate": 188027,
+    "rating": 104507,
+    "votes": 104505,
+    "runtime": 83484,
+    "year": 48452,
+    "star": 44346,
+    "star_id": 39089,
+    "director": 20839,
+    "director_id": 20839,
+    "movie_name": 2
+  },
+  "persen_missing": {
+    "gross(in $)": 95.06,
+    "certificate": 77.31,
+    "rating": 42.97,
+    "votes": 42.97,
+    "runtime": 34.33,
+    "year": 19.92,
+    "star": 18.23,
+    "star_id": 16.07,
+    "director": 8.57,
+    "director_id": 8.57,
+    "movie_name": 0.0
+  },
+  "rentang_tahun": [
+    1894,
+    2029
+  ],
+  "statistik_numerik": {
+    "count": {
+      "year": 194745.0,
+      "rating": 138690.0,
+      "runtime": 159713.0,
+      "votes": 138692.0,
+      "gross(in $)": 12002.0
+    },
+    "mean": {
+      "year": 1993.559,
+      "rating": 5.862,
+      "runtime": 95.193,
+      "votes": 6511.084,
+      "gross(in $)": 23339245.965
+    },
+    "std": {
+      "year": 27.469,
+      "rating": 1.33,
+      "runtime": 26.508,
+      "votes": 47579.683,
+      "gross(in $)": 53224263.847
+    },
+    "min": {
+      "year": 1894.0,
+      "rating": 1.0,
+      "runtime": 1.0,
+      "votes": 5.0,
+      "gross(in $)": 1.0
+    },
+    "25%": {
+      "year": 1975.0,
+      "rating": 5.1,
+      "runtime": 82.0,
+      "votes": 29.0,
+      "gross(in $)": 218112.0
+    },
+    "50%": {
+      "year": 2004.0,
+      "rating": 6.0,
+      "runtime": 92.0,
+      "votes": 124.0,
+      "gross(in $)": 3032808.5
+    },
+    "75%": {
+      "year": 2016.0,
+      "rating": 6.8,
+      "runtime": 105.0,
+      "votes": 720.0,
+      "gross(in $)": 22761383.0
+    },
+    "max": {
+      "year": 2029.0,
+      "rating": 10.0,
+      "runtime": 999.0,
+      "votes": 2675531.0,
+      "gross(in $)": 936662225.0
+    }
+  }
+}

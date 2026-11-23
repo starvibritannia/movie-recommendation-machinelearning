@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import 'tonton_engine.dart';
 import 'tv_mascot.dart';
 
@@ -98,7 +99,7 @@ class _BurstPainter extends CustomPainter {
       center,
       ringRadius,
       Paint()
-        ..color = const Color(0xFFFFB03A).withValues(alpha: (1 - p) * 0.75)
+        ..color = AppColors.accentLight.withValues(alpha: (1 - p) * 0.75)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 5 * (1 - p) + 1,
     );
@@ -111,8 +112,7 @@ class _BurstPainter extends CustomPainter {
       canvas.drawCircle(
         pos,
         4.5 * (1 - p) + 0.5,
-        Paint()
-          ..color = const Color(0xFFFF7A18).withValues(alpha: (1 - p) * 0.9),
+        Paint()..color = AppColors.accent.withValues(alpha: (1 - p) * 0.9),
       );
     }
   }

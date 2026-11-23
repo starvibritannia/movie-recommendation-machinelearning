@@ -13,7 +13,11 @@ import '../providers/watchlist_provider.dart';
 import '../utils/watchlist_toggler.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/jelly_press.dart';
+import '../widgets/jelly_sliders.dart';
 import '../widgets/mascot_bubble.dart';
+import '../widgets/wordmark.dart';
+import '../widgets/marquee_panel.dart';
 import '../widgets/mascot_stage.dart';
 import '../widgets/movie_card.dart';
 import '../widgets/tonton_engine.dart';
@@ -83,27 +87,23 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
     duration: const Duration(milliseconds: 3200),
   )..repeat();
 
-  /// Penerbangan orb genre / gelembung kata ke mulut TonTon.
-  late final AnimationController _fly = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 430),
-  );
+  /// Penerbangan gelembung kata ke mulut TonTon.
   late final AnimationController _keywordFly = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 460),
   );
+  late final AnimationController _invitePop = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 520),
+  );
 
   // ---------------- state panggung ----------------
-  List<_OrbSpec> _orbs = const [];
   Size _stageSize = Size.zero;
-  Offset _inviteCenter = Offset.zero;
 
-  _Flight? _flying;
   String? _keywordBubble;
   Offset _keywordFrom = Offset.zero;
 
   Timer? _greetingTimer;
-  Timer? _lookTimer;
   Timer? _pendingTimer;
   Timer? _reactionTimer;
   Timer? _debounce;
@@ -156,7 +156,6 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   @override
   void dispose() {
     _greetingTimer?.cancel();
-    _lookTimer?.cancel();
     _pendingTimer?.cancel();
     _reactionTimer?.cancel();
     _debounce?.cancel();
@@ -168,8 +167,8 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
     _sliderExit.dispose();
     _keywordEnter.dispose();
     _float.dispose();
-    _fly.dispose();
     _keywordFly.dispose();
+    _invitePop.dispose();
     _mascot.dispose();
     super.dispose();
   }
@@ -191,13 +190,11 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   void _goInvite() {
     if (!mounted || _stageSize == Size.zero) return;
     _setPhase(_Phase.invite);
-    setState(() {
-      _inviteCenter = _randomAround(
-        _mascotCenter(_stageSize),
-        _mascotSize(_stageSize),
-      );
-    });
-    // Tangan turun halus, bukan hilang mendadak.
+    // Tombol "diberikan" TonTon: muncul dari tubuhnya, bukan di tempat acak.
+    _invitePop.forward(from: 0);
+    _mascot.hop(420);
+    _mascot.squish(-5);
+    _mascot.glance(0.7, 0.5);
     _waveCtrl.animateTo(
       0,
       duration: const Duration(milliseconds: 500),
@@ -207,33 +204,25 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
 
   void _goGenre() {
     if (!mounted || _stageSize == Size.zero) return;
-    final center = _mascotCenter(_stageSize);
-    final mSize = _mascotSize(_stageSize);
 
     _setPhase(_Phase.genre);
-    setState(() {
-      _orbs = _generateOrbs(_stageSize, center, mSize);
-    });
 
-    // Girang sekejap pas genre muncul, lalu tenang nunggu pilihan user.
+    // Girang sekejap pas papan genre muncul, lalu tenang nunggu pilihan user.
     _mascot.hop(760);
     _mascot.squish(-6);
     _mascot.glance(8, -6);
 
     _pendingTimer?.cancel();
-    _pendingTimer = Timer(const Duration(milliseconds: 300), () {
+    _pendingTimer = Timer(const Duration(milliseconds: 260), () {
       if (!mounted) return;
       setState(() => _explodeToken++);
-      _pendingTimer = Timer(const Duration(milliseconds: 180), () {
+      _pendingTimer = Timer(const Duration(milliseconds: 140), () {
         if (mounted) _chipEnter.forward(from: 0);
       });
     });
-
-    _startLook();
   }
 
   void _confirmGenre() {
-    _lookTimer?.cancel();
     _setPhase(_Phase.absorb);
     _mascot.hop(620);
     _mascot.squish(-4);
@@ -315,15 +304,11 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   void _restart() {
     context.read<RecommendationProvider>().resetFilters();
     _keywordCtrl.clear();
-    _lookTimer?.cancel();
     _chipEnter.reset();
     _chipExit.reset();
     _sliderEnter.reset();
     _sliderExit.reset();
     _keywordEnter.reset();
-    setState(() {
-      _orbs = const [];
-    });
     _mascot.clearScreen();
     _setPhase(_Phase.greeting);
     _waveCtrl.animateTo(
@@ -363,173 +348,41 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
     _reactionText = null;
   }
 
-  void _toggleGenre(String genre, Offset orbCenter) {
+  void _toggleGenre(String genre) {
     final provider = context.read<RecommendationProvider>();
     final willSelect = !provider.selectedGenres.contains(genre);
-    if (_flying != null) return;
     _mascot.noteActivity();
-
-    final center = _mascotCenter(_stageSize);
-    final mSize = _mascotSize(_stageSize);
-    final mouth = _mouthPos(center, mSize);
+    provider.toggleGenre(genre);
 
     if (willSelect) {
-      _startFlight(
-        _Flight(label: genre, from: orbCenter, to: mouth, select: true),
-      );
+      _mascot.swallow();
+      final reaction = _genreReactions[genre];
+      _reactNow(text: reaction?.$2, expression: reaction?.$1);
     } else {
-      _startFlight(
-        _Flight(
-          label: genre,
-          from: _orbitPosOf(genre, center, mSize),
-          to: orbCenter,
-          select: false,
-        ),
-      );
+      _mascot.squish(-4);
     }
-  }
-
-  void _startFlight(_Flight flight) {
-    setState(() => _flying = flight);
-    _fly.forward(from: 0).then((_) {
-      if (!mounted) return;
-      final f = _flying;
-      setState(() => _flying = null);
-      if (f == null) return;
-      context.read<RecommendationProvider>().toggleGenre(f.label);
-      if (f.select) {
-        _mascot.swallow();
-        final reaction = _genreReactions[f.label];
-        _reactNow(text: reaction?.$2, expression: reaction?.$1);
-      } else {
-        _mascot.squish(-4);
-      }
-    });
   }
 
   /// Posisi mulut TonTon di koordinat panggung (mulut ada di layar).
   Offset _mouthPos(Offset center, double mSize) =>
       center + Offset(0, 14 * mSize / 220);
 
-  /// Posisi orbit orb yang lagi dipilih.
-  Offset _orbitPosOf(String label, Offset center, double mSize) {
-    final selected = context.read<RecommendationProvider>().selectedGenres;
-    final list = AppStrings.availableGenres.where(selected.contains).toList();
-    final i = list.indexOf(label);
-    final angle =
-        -math.pi / 2 +
-        i * (2 * math.pi / math.max(1, list.length)) +
-        _float.value * 0.8;
-    final r = mSize * 0.78;
-    return center + Offset(math.cos(angle) * r, math.sin(angle) * r * 0.55);
-  }
-
-  // ---------------------------------------------------------------- pandang
-  void _startLook() {
-    _lookTimer?.cancel();
-    _lookTimer = Timer.periodic(const Duration(milliseconds: 1050), (_) {
-      if (!mounted || _orbs.isEmpty) return;
-      final target = _orbs[math.Random().nextInt(_orbs.length)].home;
-      _lookAt(target);
-    });
-  }
-
-  void _lookAt(Offset target) {
-    final center = _mascotCenter(_stageSize);
-    final d = target - center;
-    final len = d.distance;
-    if (len == 0) return;
-    final dir = d / len;
-    _mascot.lookDir(dir.dx.clamp(-1.0, 1.0), dir.dy.clamp(-1.0, 1.0) * 0.9);
-  }
-
   // ---------------------------------------------------------------- geometri
   /// Di fase slider/keyword maskot naik & mengecil supaya panelnya muat.
   bool _compactMascot(_Phase phase) =>
+      phase == _Phase.genre ||
+      phase == _Phase.absorb ||
       phase == _Phase.sliders ||
       phase == _Phase.sliderExit ||
       phase == _Phase.keyword;
 
   double _mascotSize(Size s) => _compactMascot(_phase)
-      ? math.min(s.width * 0.34, 138)
+      ? math.min(s.width * 0.30, 118)
       : math.min(s.width * 0.46, 184);
 
   Offset _mascotCenter(Size s) => _compactMascot(_phase)
-      ? Offset(s.width / 2, s.height * 0.22)
+      ? Offset(s.width / 2, s.height * 0.20)
       : Offset(s.width / 2, s.height * 0.40);
-
-  Offset _randomAround(Offset center, double mascotSize) {
-    final rng = math.Random();
-    final angle = rng.nextDouble() * math.pi * 2;
-    final radius = mascotSize * 0.78 + rng.nextDouble() * 24;
-    final p =
-        center +
-        Offset(math.cos(angle) * radius, math.sin(angle) * radius * 0.78);
-    return Offset(
-      p.dx.clamp(84, _stageSize.width - 84),
-      p.dy.clamp(128, _stageSize.height - 148),
-    );
-  }
-
-  List<_OrbSpec> _generateOrbs(Size stage, Offset center, double mSize) {
-    final rng = math.Random();
-    final orbs = <_OrbSpec>[];
-
-    final bubbleRect = Rect.fromLTWH(0, 0, stage.width, 108);
-    // Area tombol "Lanjut" yang compact di bawah TonTon.
-    final confirmRect = Rect.fromCenter(
-      center: Offset(center.dx, center.dy + mSize / 2 + 26),
-      width: 210,
-      height: 82,
-    );
-    final mascotRect = Rect.fromCircle(center: center, radius: mSize * 0.60);
-
-    for (final label in AppStrings.availableGenres) {
-      final r = (15 + label.length * 1.35).clamp(22.0, 34.0);
-      var placed = false;
-      var pos = Offset.zero;
-
-      for (var attempt = 0; attempt < 90 && !placed; attempt++) {
-        final x = r + 10 + rng.nextDouble() * (stage.width - 2 * r - 20);
-        final y =
-            116 + r + rng.nextDouble() * (stage.height - 116 - 2 * r - 96);
-        final rect = Rect.fromCircle(center: Offset(x, y), radius: r + 6);
-
-        if (rect.overlaps(bubbleRect) || rect.overlaps(confirmRect)) continue;
-        if (mascotRect.overlaps(rect)) continue;
-
-        var overlap = false;
-        for (final o in orbs) {
-          if ((o.home - Offset(x, y)).distance < o.radius + r + 10) {
-            overlap = true;
-            break;
-          }
-        }
-        if (overlap) continue;
-
-        pos = Offset(x, y);
-        placed = true;
-      }
-
-      if (!placed) {
-        // Fallback: susun rapi kalau acak gagal (layar sempit).
-        final idx = orbs.length;
-        final col = idx % 5;
-        final row = idx ~/ 5;
-        pos = Offset(20 + col * (stage.width - 40) / 4, 124 + row * 52);
-      }
-
-      orbs.add(
-        _OrbSpec(
-          label: label,
-          home: pos,
-          radius: r,
-          phase: rng.nextDouble() * math.pi * 2,
-        ),
-      );
-    }
-    return orbs;
-  }
 
   // ---------------------------------------------------------------- tampil
   @override
@@ -539,11 +392,8 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
 
     return AppScaffold(
       appBar: AppBar(
-        title: Image.asset(
-          'assets/logo/header_logo.png',
-          height: 42,
-          fit: BoxFit.contain,
-        ),
+        centerTitle: false,
+        title: const Wordmark(fontSize: 20),
         actions: [
           IconButton(
             tooltip: 'Reset',
@@ -568,7 +418,6 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
                 _keywordEnter,
                 _float,
                 _waveCtrl,
-                _fly,
                 _keywordFly,
               ]),
               builder: (context, _) {
@@ -608,9 +457,9 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
                       ),
                     ),
 
-                    // Genre-genre mengapung (orb).
+                    // Papan marquee pemilih genre.
                     if (_phase == _Phase.genre || _phase == _Phase.absorb)
-                      ..._buildOrbs(center, mSize),
+                      _buildGenrePanel(center, mSize),
 
                     // Gelembung kata kunci yang ditelan TonTon.
                     if (_keywordBubble != null)
@@ -618,11 +467,6 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
 
                     // Tombol ajakan pertama.
                     if (_phase == _Phase.invite) _buildInvite(),
-
-                    // Tombol konfirmasi genre.
-                    if (_phase == _Phase.genre &&
-                        provider.selectedGenres.isNotEmpty)
-                      _buildConfirmGenre(center, mSize),
 
                     // Panel slider.
                     if (_phase == _Phase.sliders || _phase == _Phase.sliderExit)
@@ -672,102 +516,94 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
     };
   }
 
-  // ---------------------------------------------------------------- chip
-  List<Widget> _buildOrbs(Offset center, double mSize) {
-    final selected = context.watch<RecommendationProvider>().selectedGenres;
-    final selectedList = AppStrings.availableGenres
-        .where(selected.contains)
-        .toList();
-    return [
-      for (var i = 0; i < _orbs.length; i++)
-        _buildOrb(_orbs[i], i, center, mSize, selected, selectedList),
-    ];
-  }
+  // ---------------------------------------------------------------- genre
+  Widget _buildGenrePanel(Offset center, double mSize) {
+    final enterT = Curves.easeOutBack.transform(_chipEnter.value);
+    final exitT = Curves.easeInCubic.transform(_chipExit.value);
+    final panelTop = center.dy + mSize / 2 + 8;
 
-  double _orbProgress(double value, int index) {
-    final start = (index * 0.02).clamp(0.0, 0.7);
-    final end = (start + 0.24).clamp(0.0, 1.0);
-    if (value <= start) return 0;
-    if (value >= end) return 1;
-    return (value - start) / (end - start);
-  }
-
-  Widget _buildOrb(
-    _OrbSpec orb,
-    int index,
-    Offset center,
-    double mSize,
-    Set<String> selected,
-    List<String> selectedList,
-  ) {
-    final isSelected = selected.contains(orb.label);
-    final flight = _flying;
-
-    final enterT = _orbProgress(_chipEnter.value, index);
-    final exitT = _chipExit.value;
-    final floatT = _float.value * math.pi * 2;
-
-    final enterScale = Curves.easeOutBack.transform(enterT);
-    final enterOpacity = enterT.clamp(0.0, 1.0);
-    final from = (center - orb.home) * (1 - enterT) * 0.4;
-    final floatDy = math.sin(floatT + orb.phase) * 5.0 * enterT;
-    final floatDx = math.cos(floatT * 0.6 + orb.phase) * 3.0 * enterT;
-
-    var pos = orb.home + from + Offset(floatDx, floatDy);
-    var radius = orb.radius;
-    var scale = enterScale;
-    var opacity = enterOpacity;
-
-    if (isSelected) {
-      // Orb terpilih mengorbit TonTon.
-      final i = selectedList.indexOf(orb.label);
-      final angle =
-          -math.pi / 2 +
-          i * (2 * math.pi / math.max(1, selectedList.length)) +
-          _float.value * 0.8;
-      final r = mSize * 0.78;
-      pos = center + Offset(math.cos(angle) * r, math.sin(angle) * r * 0.55);
-      radius = 15;
-    }
-
-    if (flight != null && flight.label == orb.label) {
-      final t = Curves.easeInCubic.transform(_fly.value);
-      pos = Offset.lerp(flight.from, flight.to, t)!;
-      scale = 1 - t * 0.82;
-      opacity = 1 - t * 0.25;
-      radius = radius * (1 - t * 0.4);
-    }
-
-    if (exitT > 0) {
-      if (isSelected) {
-        // Orb pilihan ditelan TonTon.
-        pos = Offset.lerp(
-          pos,
-          _mouthPos(center, mSize),
-          Curves.easeInCubic.transform(exitT),
-        )!;
-        scale = scale * (1 - exitT * 0.92);
-        opacity = opacity * (1 - exitT);
-      } else {
-        // Orb yang nggak dipilih lenyap.
-        pos = pos + Offset(0, -exitT * 26);
-        scale = scale * (1 + exitT * 0.4);
-        opacity = opacity * (1 - exitT);
-      }
-    }
+    final scale = enterT * (1 - exitT * 0.55);
+    final opacity = enterT.clamp(0.0, 1.0) * (1 - exitT);
+    // Saat keluar, panel "diserap" ke arah maskot (ke atas).
+    final dy = (center.dy - panelTop) * exitT * 0.9;
 
     return Positioned(
-      left: pos.dx - radius,
-      top: pos.dy - radius,
+      left: 16,
+      right: 16,
+      top: panelTop,
+      bottom: AppLayout.navSpacer,
       child: Opacity(
         opacity: opacity.clamp(0.0, 1.0),
-        child: Transform.scale(
-          scale: scale,
-          child: _GenreOrb(
-            label: orb.label,
-            radius: radius,
-            selected: isSelected,
-            onTap: () => _toggleGenre(orb.label, orb.home),
+        child: Transform.translate(
+          offset: Offset(0, dy),
+          child: Transform.scale(
+            scale: scale,
+            alignment: Alignment.topCenter,
+            child: _buildGenrePanelBody(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGenrePanelBody() {
+    final provider = context.watch<RecommendationProvider>();
+    final selected = provider.selectedGenres;
+
+    // Isi papan muncul bertahap supaya terasa hidup.
+    final t = Interval(
+      0.02,
+      0.5,
+      curve: Curves.easeOutBack,
+    ).transform(_chipEnter.value.clamp(0.0, 1.0));
+
+    return MarqueePanel(
+      title: AppStrings.marqueeGenreTitle,
+      subtitle: AppStrings.marqueeGenreSubtitle,
+      cornerBadge: const _GenreTicket(),
+      footer: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${selected.length} ${AppStrings.marqueeSelectedSuffix}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12.5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _BouncyButton(
+            label: AppStrings.mascotGenreConfirm,
+            onTap: selected.isEmpty ? null : _confirmGenre,
+            height: 44,
+            radius: 14,
+            icon: Icons.arrow_forward_rounded,
+          ),
+        ],
+      ),
+      scrollable: true,
+      child: Opacity(
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, (1 - t) * 18),
+          child: GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 3,
+            mainAxisSpacing: 5,
+            crossAxisSpacing: 6,
+            childAspectRatio: 3.6,
+            children: [
+              for (final genre in AppStrings.availableGenres)
+                _GenreLight(
+                  label: genre,
+                  selected: selected.contains(genre),
+                  onTap: () => _toggleGenre(genre),
+                ),
+            ],
           ),
         ),
       ),
@@ -801,31 +637,38 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   }
 
   // ---------------------------------------------------------------- tombol
-  Widget _buildInvite() {
-    final floatT = _float.value * math.pi * 2;
-    final dy = math.sin(floatT) * 6;
-    return Positioned(
-      left: _inviteCenter.dx - 86,
-      top: _inviteCenter.dy - 26 + dy,
-      child: _PopIn(
-        child: _BouncyButton(label: AppStrings.mascotInvite, onTap: _goGenre),
-      ),
+  /// Posisi tombol yang "diberikan" TonTon: di sisi kanan badannya.
+  Offset _inviteTarget() {
+    final center = _mascotCenter(_stageSize);
+    final mSize = _mascotSize(_stageSize);
+    return Offset(
+      (center.dx + mSize * 0.68).clamp(92, _stageSize.width - 92),
+      (center.dy + mSize * 0.50).clamp(132, _stageSize.height - 152),
     );
   }
 
-  Widget _buildConfirmGenre(Offset center, double mSize) {
-    // Tombol "Lanjut" compact yang nempel di bawah TonTon (bukan bar penuh),
-    // supaya nggak menghalangi orb-orb genre.
+  Widget _buildInvite() {
     final floatT = _float.value * math.pi * 2;
-    final dy = math.sin(floatT) * 4;
+    final dy = math.sin(floatT) * 6;
+    final t = Curves.easeOutBack.transform(_invitePop.value);
+    final center = _mascotCenter(_stageSize);
+    final mSize = _mascotSize(_stageSize);
+    // Tombol meluncur keluar dari badan TonTon ke posisi di sampingnya.
+    final pos = Offset.lerp(
+      center + Offset(0, mSize * 0.08),
+      _inviteTarget(),
+      t,
+    )!;
+
     return Positioned(
-      left: center.dx - 82,
-      top: center.dy + mSize / 2 + 2 + dy,
-      child: _PopIn(
-        child: _BouncyButton(
-          label: AppStrings.mascotGenreConfirm,
-          onTap: _confirmGenre,
-          height: 46,
+      left: pos.dx - 86,
+      top: pos.dy - 26 + dy,
+      child: Opacity(
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.scale(
+          scale: 0.35 + 0.65 * t,
+          alignment: Alignment.center,
+          child: _BouncyButton(label: AppStrings.mascotInvite, onTap: _goGenre),
         ),
       ),
     );
@@ -875,72 +718,95 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   Widget _buildSliderPanel() {
     final provider = context.watch<RecommendationProvider>();
 
-    return GlassCard(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+    // Setiap baris muncul bertahap (stagger) supaya panelnya terasa hidup.
+    Widget staged(Widget child, int i) {
+      final t = Interval(
+        (i * 0.14).clamp(0.0, 0.55),
+        ((i * 0.14) + 0.42).clamp(0.0, 1.0),
+        curve: Curves.easeOutBack,
+      ).transform(_sliderEnter.value.clamp(0.0, 1.0));
+      return Opacity(
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, (1 - t) * 18),
+          child: child,
+        ),
+      );
+    }
+
+    return MarqueePanel(
+      title: AppStrings.marqueeSliderTitle,
+      subtitle: AppStrings.marqueeSliderSubtitle,
+      footer: staged(
+        SizedBox(
+          width: double.infinity,
+          child: _BouncyButton(
+            label: AppStrings.mascotSliderConfirm,
+            onTap: _confirmSliders,
+            height: 48,
+          ),
+        ),
+        4,
+      ),
+      scrollable: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Flexible(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildRatingRow(provider),
-                  _buildRangeRow(
-                    label: AppStrings.labelRuntime,
-                    value:
-                        '${provider.runtimeRange.start.round()} - '
-                        '${provider.runtimeRange.end.round()} menit',
-                    values: provider.runtimeRange,
-                    min: 0,
-                    max: 300,
-                    onChanged: (v) {
-                      provider.setRuntimeRange(v);
-                      _reactInput(
-                        'durasi ${v.start.round()}-${v.end.round()} menit',
-                        MascotExpression.thinking,
-                      );
-                    },
-                  ),
-                  _buildRangeRow(
-                    label: AppStrings.labelYear,
-                    value:
-                        '${provider.yearRange.start.round()} - '
-                        '${provider.yearRange.end.round()}',
-                    values: provider.yearRange,
-                    min: 1900,
-                    max: 2025,
-                    onChanged: (v) {
-                      provider.setYearRange(v);
-                      _reactInput(
-                        'tahun ${v.start.round()}-${v.end.round()}',
-                        MascotExpression.thinking,
-                      );
-                    },
-                  ),
-                  _buildTopNRow(provider),
-                ],
-              ),
+          staged(_buildRatingRow(provider), 0),
+          const SizedBox(height: 14),
+          staged(
+            _buildRangeRow(
+              icon: Icons.schedule_rounded,
+              label: AppStrings.labelRuntime,
+              value:
+                  '${provider.runtimeRange.start.round()} - '
+                  '${provider.runtimeRange.end.round()} menit',
+              values: provider.runtimeRange,
+              min: 0,
+              max: 300,
+              onChanged: (v) {
+                provider.setRuntimeRange(v);
+                _reactInput(
+                  'durasi ${v.start.round()}-${v.end.round()} menit',
+                  MascotExpression.thinking,
+                );
+              },
             ),
+            1,
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: _BouncyButton(
-              label: AppStrings.mascotSliderConfirm,
-              onTap: _confirmSliders,
+          const SizedBox(height: 14),
+          staged(
+            _buildRangeRow(
+              icon: Icons.calendar_month_rounded,
+              label: AppStrings.labelYear,
+              value:
+                  '${provider.yearRange.start.round()} - '
+                  '${provider.yearRange.end.round()}',
+              values: provider.yearRange,
+              min: 1900,
+              max: 2025,
+              onChanged: (v) {
+                provider.setYearRange(v);
+                _reactInput(
+                  'tahun ${v.start.round()}-${v.end.round()}',
+                  MascotExpression.thinking,
+                );
+              },
             ),
+            2,
           ),
+          const SizedBox(height: 14),
+          staged(_buildTopNRow(provider), 3),
         ],
       ),
     );
   }
 
   Widget _buildRatingRow(RecommendationProvider provider) {
-    return _SquishySlider(
+    return JellySlider(
       label: AppStrings.labelMinRating,
+      icon: Icons.star_rounded,
       valueText: provider.minRating.toStringAsFixed(1),
       value: provider.minRating.clamp(0, 10),
       min: 0,
@@ -958,47 +824,28 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
 
   Widget _buildRangeRow({
     required String label,
+    IconData? icon,
     required String value,
     required RangeValues values,
     required double min,
     required double max,
     required ValueChanged<RangeValues> onChanged,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(fontSize: 13)),
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.accent,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-        RangeSlider(
-          values: values,
-          min: min,
-          max: max,
-          divisions: (max - min).round(),
-          labels: RangeLabels(
-            values.start.round().toString(),
-            values.end.round().toString(),
-          ),
-          onChanged: onChanged,
-        ),
-      ],
+    return JellyRangeSlider(
+      label: label,
+      icon: icon,
+      valueText: value,
+      values: values,
+      min: min,
+      max: max,
+      onChanged: onChanged,
     );
   }
 
   Widget _buildTopNRow(RecommendationProvider provider) {
-    return _SquishySlider(
+    return JellySlider(
       label: AppStrings.labelTopN,
+      icon: Icons.movie_filter_rounded,
       valueText: '${provider.topN} film',
       value: provider.topN.toDouble().clamp(5, 30),
       min: 5,
@@ -1018,51 +865,36 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
     return Positioned(
       left: 16,
       right: 16,
-      top: center.dy + mSize / 2 + 12,
+      top: center.dy + mSize / 2 + 10,
       child: Opacity(
         opacity: enterT.clamp(0.0, 1.0),
         child: Transform.scale(
           scale: enterT,
           alignment: Alignment.topCenter,
-          child: GlassCard(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+          child: MarqueePanel(
+            title: AppStrings.marqueeKeywordTitle,
+            subtitle: AppStrings.marqueeKeywordSubtitle,
+            padding: const EdgeInsets.fromLTRB(18, 14, 12, 12),
+            child: Row(
               children: [
-                const Text(
-                  AppStrings.mascotKeywordAsk,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _keywordCtrl,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => _submitKeyword(),
-                  onChanged: (value) {
-                    context.read<RecommendationProvider>().setKeyword(value);
-                    final teks = value.trim();
-                    _reactInput(
-                      teks.isEmpty
-                          ? 'Kosongin kata kunci, oke.'
-                          : 'Cari yang berbau "$teks"...',
-                      MascotExpression.thinking,
-                    );
-                  },
-                  decoration: const InputDecoration(
-                    labelText: AppStrings.labelKeyword,
-                    border: OutlineInputBorder(),
-                    isDense: true,
+                Expanded(
+                  child: _ChatField(
+                    controller: _keywordCtrl,
+                    onChanged: (value) {
+                      context.read<RecommendationProvider>().setKeyword(value);
+                      final teks = value.trim();
+                      _reactInput(
+                        teks.isEmpty
+                            ? 'Kosongin kata kunci, oke.'
+                            : 'Cari yang berbau "$teks"...',
+                        MascotExpression.thinking,
+                      );
+                    },
+                    onSubmitted: (_) => _submitKeyword(),
                   ),
                 ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: _BouncyButton(
-                    label: AppStrings.mascotSearch,
-                    onTap: _submitKeyword,
-                  ),
-                ),
+                const SizedBox(width: 10),
+                _SwallowButton(onTap: _submitKeyword),
               ],
             ),
           ),
@@ -1072,90 +904,221 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   }
 }
 
-/// Spesifikasi satu orb genre yang mengapung.
-class _OrbSpec {
-  final String label;
-  final Offset home;
-  final double radius;
-  final double phase;
+/// Kolom kata kunci di dalam papan marquee.
+class _ChatField extends StatelessWidget {
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final ValueChanged<String> onSubmitted;
 
-  const _OrbSpec({
-    required this.label,
-    required this.home,
-    required this.radius,
-    required this.phase,
+  const _ChatField({
+    required this.controller,
+    required this.onChanged,
+    required this.onSubmitted,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.glassBorder),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 12),
+          const Icon(
+            Icons.auto_awesome,
+            size: 18,
+            color: AppColors.accentLight,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              textInputAction: TextInputAction.search,
+              onSubmitted: onSubmitted,
+              onChanged: onChanged,
+              style: const TextStyle(fontSize: 14),
+              decoration: const InputDecoration(
+                hintText: 'mis. dream / mimpi, space / luar angkasa...',
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-/// Penerbangan orb genre ke/dari mulut TonTon.
-class _Flight {
-  final String label;
-  final Offset from;
-  final Offset to;
-  final bool select;
+/// Tombol "beri ke TonTon": bulat jelly dengan panah menuju mulut.
+class _SwallowButton extends StatelessWidget {
+  final VoidCallback onTap;
 
-  const _Flight({
-    required this.label,
-    required this.from,
-    required this.to,
-    required this.select,
-  });
+  const _SwallowButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return JellyPress(
+      onTap: onTap,
+      pressedScale: 0.14,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: AppColors.accentGradient,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accent.withValues(alpha: 0.5),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.keyboard_double_arrow_up_rounded,
+          color: Colors.white,
+          size: 26,
+        ),
+      ),
+    );
+  }
 }
 
-/// Orb genre mengapung: bulat kenyal, berlabel, bisa di-tap buat ditelan.
-class _GenreOrb extends StatelessWidget {
+/// Tiket "TIKET GENRE" yang menempel miring di pojok kanan atas papan marquee.
+class _GenreTicket extends StatelessWidget {
+  const _GenreTicket();
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: 0.16,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFFE7C4), AppColors.accentLight],
+              ),
+              borderRadius: BorderRadius.circular(7),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.confirmation_number_rounded,
+                  size: 12,
+                  color: Color(0xFF3A1B05),
+                ),
+                SizedBox(width: 5),
+                Text(
+                  'TIKET GENRE',
+                  style: TextStyle(
+                    color: Color(0xFF3A1B05),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Lubang tiket di sisi kiri-kanan.
+          const Positioned(
+            left: -3,
+            top: 0,
+            bottom: 0,
+            child: Center(child: _TicketNotch()),
+          ),
+          const Positioned(
+            right: -3,
+            top: 0,
+            bottom: 0,
+            child: Center(child: _TicketNotch()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TicketNotch extends StatelessWidget {
+  const _TicketNotch();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 7,
+      height: 7,
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+/// Sel genre di papan marquee: kotak "lampu" yang menyala kalau dipilih.
+class _GenreLight extends StatelessWidget {
   final String label;
-  final double radius;
   final bool selected;
   final VoidCallback onTap;
 
-  const _GenreOrb({
+  const _GenreLight({
     required this.label,
-    required this.radius,
     required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final diameter = radius * 2;
-    final bg = selected
-        ? AppColors.accent.withValues(alpha: 0.32)
-        : AppColors.glass;
-    final border = selected ? AppColors.accent : AppColors.glassBorder;
-
-    return GestureDetector(
+    return JellyPress(
       onTap: onTap,
+      pressedScale: 0.12,
       child: Container(
-        width: diameter,
-        height: diameter,
         alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: bg,
-          border: Border.all(color: border, width: selected ? 2 : 1.2),
+          gradient: selected ? AppColors.accentGradient : null,
+          color: selected ? null : Colors.white.withValues(alpha: 0.045),
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(
+            color: selected ? Colors.transparent : AppColors.glassBorder,
+          ),
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: AppColors.accent.withValues(alpha: 0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+                    color: AppColors.accent.withValues(alpha: 0.45),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
                 ]
-              : const [],
+              : null,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(5),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              maxLines: 1,
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                color: selected ? Colors.white : AppColors.textPrimary,
-              ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+              color: selected ? Colors.white : AppColors.textPrimary,
             ),
           ),
         ),
@@ -1164,184 +1127,71 @@ class _GenreOrb extends StatelessWidget {
   }
 }
 
-/// Slider kenyal: thumb bulat yang membesar saat ditarik.
-class _SquishySlider extends StatefulWidget {
-  final String label;
-  final String valueText;
-  final double value;
-  final double min;
-  final double max;
-  final int divisions;
-  final ValueChanged<double> onChanged;
-
-  const _SquishySlider({
-    required this.label,
-    required this.valueText,
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.divisions,
-    required this.onChanged,
-  });
-
-  @override
-  State<_SquishySlider> createState() => _SquishySliderState();
-}
-
-class _SquishySliderState extends State<_SquishySlider>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _press = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 180),
-  );
-
-  @override
-  void dispose() {
-    _press.dispose();
-    super.dispose();
-  }
-
-  void _update(double localX, double width) {
-    final t = (localX / width).clamp(0.0, 1.0);
-    final step = (widget.max - widget.min) / widget.divisions;
-    final raw = widget.min + t * (widget.max - widget.min);
-    widget.onChanged((raw / step).round() * step);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = ((widget.value - widget.min) / (widget.max - widget.min)).clamp(
-      0.0,
-      1.0,
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(widget.label, style: const TextStyle(fontSize: 13)),
-            Text(
-              widget.valueText,
-              style: const TextStyle(
-                color: AppColors.accent,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final w = constraints.maxWidth;
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onHorizontalDragStart: (d) {
-                _press.forward();
-                _update(d.localPosition.dx, w);
-              },
-              onHorizontalDragUpdate: (d) => _update(d.localPosition.dx, w),
-              onHorizontalDragEnd: (_) => _press.reverse(),
-              onTapDown: (d) {
-                _press.forward();
-                _update(d.localPosition.dx, w);
-              },
-              onTapUp: (_) => _press.reverse(),
-              onTapCancel: () => _press.reverse(),
-              child: AnimatedBuilder(
-                animation: _press,
-                builder: (context, _) {
-                  final s = 1 + _press.value * 0.35;
-                  return SizedBox(
-                    height: 40,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: AppColors.glass,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: FractionallySizedBox(
-                            widthFactor: t,
-                            child: Container(
-                              height: 8,
-                              color: AppColors.accent,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: (w - 30) * t,
-                          child: Transform.scale(
-                            scale: s,
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.accent,
-                                  width: 4,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.accent.withValues(
-                                      alpha: 0.4,
-                                    ),
-                                    blurRadius: 10,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-/// Tombol pil utama dengan gradien oranye.
+/// Tombol pil utama dengan gradien oranye. Kalau [onTap] null, tombol tampak
+/// redup dan nggak merespons (dipakai saat syarat belum terpenuhi).
 class _BouncyButton extends StatelessWidget {
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final double height;
+
+  /// Kalau diisi, sudutnya membulat sebesar ini (bukan pil penuh). Dipakai
+  /// biar tombolnya match gaya tombol di papan marquee.
+  final double? radius;
+
+  /// Ikon kecil di depan label (misal panah "lanjut").
+  final IconData? icon;
 
   const _BouncyButton({
     required this.label,
     required this.onTap,
     this.height = 52,
+    this.radius,
+    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: height,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: Colors.white,
-          elevation: 8,
-          shadowColor: AppColors.accent.withValues(alpha: 0.5),
-          shape: const StadiumBorder(),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+    final enabled = onTap != null;
+    return JellyPress(
+      onTap: onTap,
+      pressedScale: 0.06,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.42,
+        child: Container(
+          height: height,
+          alignment: Alignment.center,
+          padding: EdgeInsets.symmetric(horizontal: icon == null ? 0 : 16),
+          decoration: BoxDecoration(
+            gradient: AppColors.accentGradient,
+            borderRadius: BorderRadius.circular(radius ?? height / 2),
+            boxShadow: enabled
+                ? [
+                    BoxShadow(
+                      color: AppColors.accent.withValues(alpha: 0.45),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : const [],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 16, color: Colors.white),
+                const SizedBox(width: 7),
+              ],
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
         ),
-        child: Text(label),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_layout.dart';
 import '../../core/theme/app_colors.dart';
+import 'jelly_press.dart';
 
 /// Bar navigasi bawah bergaya glassmorphism yang melayang di atas konten,
 /// mengikuti referensi UI 3 (panel gelap membulat, semi-transparan).
@@ -111,8 +112,9 @@ class _NavItem extends StatelessWidget {
     final color = selected ? AppColors.accent : AppColors.textSecondary;
 
     return Expanded(
-      child: InkWell(
+      child: JellyPress(
         onTap: onTap,
+        pressedScale: 0.08,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -120,20 +122,27 @@ class _NavItem extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 5,
-                  ),
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  width: 56,
+                  height: 34,
                   decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.accent.withValues(alpha: 0.18)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(14),
+                    gradient: selected ? AppColors.accentGradient : null,
+                    color: selected ? null : Colors.transparent,
+                    borderRadius: BorderRadius.circular(17),
+                    boxShadow: selected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.accent.withValues(alpha: 0.45),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Icon(
                     selected ? data.activeIcon : data.icon,
-                    color: color,
+                    color: selected ? Colors.white : color,
                     size: 24,
                   ),
                 ),

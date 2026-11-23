@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../domain/entities/movie.dart';
 import 'glass_card.dart';
+import 'jelly_press.dart';
 import 'match_badge.dart';
 import 'movie_poster.dart';
 
@@ -95,11 +96,26 @@ class MovieCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    MatchBadge(value: movie.matchPercent),
-                    const SizedBox(width: 8),
-                    if (movie.clusterLabel != null)
-                      _ClusterBadge(label: movie.clusterLabel!),
-                    const Spacer(),
+                    // Badge kiri fleksibel: mengecil kalau ruang sempit, supaya
+                    // rating di kanan nggak pernah keluar dari kartu.
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              MatchBadge(value: movie.matchPercent),
+                              const SizedBox(width: 8),
+                              if (movie.clusterLabel != null)
+                                _ClusterBadge(label: movie.clusterLabel!),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                     if (onToggleBookmark != null) ...[
                       _BookmarkButton(saved: isSaved, onTap: onToggleBookmark!),
                       const SizedBox(width: 8),
@@ -130,9 +146,9 @@ class _BookmarkButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return JellyPress(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+      pressedScale: 0.22,
       child: Padding(
         padding: const EdgeInsets.all(2),
         child: AnimatedScale(

@@ -52,6 +52,15 @@ class AppStrings {
   static const String mascotAskGenre =
       'Pilih genre yang kamu suka, boleh lebih dari satu ya.';
   static const String mascotGenreConfirm = 'Oke, lanjut!';
+  // Judul papan marquee (genre, slider, kata kunci).
+  static const String marqueeGenreTitle = 'PILIH GENRE';
+  static const String marqueeGenreSubtitle = 'SILAHKAN PILIH SATU ATAU LEBIH';
+  static const String marqueeSliderTitle = 'ATUR SELERA';
+  static const String marqueeSliderSubtitle =
+      'GESER SLIDER-NYA, TONTON BAKAL NYARI YANG PAS';
+  static const String marqueeKeywordTitle = 'KATA KUNCI';
+  static const String marqueeKeywordSubtitle = 'SEMUA KATA BISA JADI PETUNJUK';
+  static const String marqueeSelectedSuffix = 'dipilih';
   static const String mascotAbsorb = 'Aku serap yang kamu pilih ya...';
   static const String mascotSlidersTitle = 'Atur selera kamu';
   static const String mascotSliderConfirm = 'Siap, lanjut!';

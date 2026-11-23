@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import 'glass_card.dart';
 
 /// Arah ekor bubble: ke bawah (maskot di bawah), ke kiri (maskot di kiri),
@@ -28,11 +29,16 @@ class MascotBubble extends StatefulWidget {
 }
 
 class _MascotBubbleState extends State<MascotBubble>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _enter = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 300),
-  )..forward();
+    duration: const Duration(milliseconds: 380),
+  );
+
+  late final AnimationController _float = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  );
 
   Timer? _timer;
   int _shown = 0;
@@ -40,6 +46,8 @@ class _MascotBubbleState extends State<MascotBubble>
   @override
   void initState() {
     super.initState();
+    _enter.forward();
+    _float.repeat(reverse: true);
     _startTyping();
   }
 
@@ -53,9 +61,8 @@ class _MascotBubbleState extends State<MascotBubble>
 
   void _startTyping() {
     _timer?.cancel();
-    _enter.forward(from: 0);
     setState(() => _shown = 0);
-    _timer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 14), (timer) {
       if (!mounted) return;
       setState(() => _shown++);
       if (_shown >= widget.text.length) {
@@ -68,6 +75,7 @@ class _MascotBubbleState extends State<MascotBubble>
   void dispose() {
     _timer?.cancel();
     _enter.dispose();
+    _float.dispose();
     super.dispose();
   }
 
@@ -164,7 +172,14 @@ class _MascotBubbleState extends State<MascotBubble>
                 : Alignment.topLeft,
             widthFactor: 1,
             heightFactor: 1,
-            child: bubble,
+            child: AnimatedBuilder(
+              animation: _float,
+              builder: (context, child) => Transform.translate(
+                offset: Offset(0, -2 + 4 * _float.value),
+                child: child,
+              ),
+              child: bubble,
+            ),
           ),
         ),
       ),
@@ -250,7 +265,7 @@ class _CaretState extends State<_Caret> with SingleTickerProviderStateMixin {
         width: 2,
         height: 15,
         margin: const EdgeInsets.only(bottom: 2),
-        color: const Color(0xFFFF7A18),
+        color: AppColors.accent,
       ),
     );
   }

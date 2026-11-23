@@ -44,6 +44,17 @@ backend/app/data/catalog.json
 UI Referensi/
 Progress/
 Konsep dan referensi/
+
+# Dokumen & notebook lokal (tidak di-push; yang di-push update ML/aplikasi)
+docs/PAHAMAN_PROYEK.md
+modeling/NeVie_Modeling.ipynb
 Thumbs.db
 desktop.ini
 *.log
+
+# ================= Artefak lokal (tidak di-push) ==================
+# Dokumen panduan dosen, mockup desain, dan gambar preview lokal.
+Panduan/
+Mockup/
+aplikasi/layout_preview.png
+aplikasi/maskot_preview.png

@@ -119,7 +119,7 @@ class _TvMascotPainter extends CustomPainter {
     // squash & stretch terasa seperti jelly yang melayang.
     canvas.translate(110 + e.pos.dx, 112 + e.pos.dy + e.bobY);
     canvas.scale(1 + 0.75 * e.sq, 1 - e.sq);
-    canvas.rotate(e.lean);
+    canvas.rotate(e.lean + e.swayAmt + e.wave * math.sin(e.time * 9) * 0.16);
     canvas.translate(0, e.nodDip * 1.2);
     canvas.rotate(e.nodDip * 0.004);
     final speed = e.vel.distance;
@@ -133,11 +133,22 @@ class _TvMascotPainter extends CustomPainter {
     canvas.translate(-110, -112);
 
     _drawAntenna(canvas, e);
-    _drawLegs(canvas);
     _drawBody(canvas, e);
-    _drawArm(canvas, e);
+    _drawRipple(canvas, e);
+
+    // Layar & wajah tertinggal sedikit di belakang badan (membran jelly),
+    // dan "pop" sebentar saat ekspresi berganti.
+    canvas.save();
+    canvas.translate(e.lagX, e.lagY);
     _drawScreen(canvas, e);
+    canvas.save();
+    canvas.translate(110, 112);
+    canvas.scale(1 + e.exprPop * 0.12);
+    canvas.translate(-110, -112);
     _drawFace(canvas, e);
+    canvas.restore();
+    canvas.restore();
+
     _drawTapeSlot(canvas, e);
 
     canvas.restore();
@@ -198,11 +209,13 @@ class _TvMascotPainter extends CustomPainter {
       Paint()..color = Colors.black.withValues(alpha: 0.22),
     );
 
-    canvas.drawRRect(rect, Paint()..color = _body);
+    // Kontur jelly: outline bergetar halus, makin kuat saat squash/ripple.
+    final path = _jellyPath(rect, e);
+    canvas.drawPath(path, Paint()..color = _body);
 
     // Volume: lapisan terang/gelap biar badan kelihatan gembul.
     canvas.save();
-    canvas.clipRRect(rect);
+    canvas.clipPath(path);
     canvas.drawRect(
       const Rect.fromLTWH(34, 42, 152, 70),
       Paint()..color = Colors.white.withValues(alpha: 0.55),
@@ -213,8 +226,8 @@ class _TvMascotPainter extends CustomPainter {
     );
     canvas.restore();
 
-    canvas.drawRRect(
-      rect,
+    canvas.drawPath(
+      path,
       Paint()
         ..color = const Color(0x40FFFFFF)
         ..style = PaintingStyle.stroke
@@ -222,60 +235,86 @@ class _TvMascotPainter extends CustomPainter {
     );
   }
 
-  void _drawLegs(Canvas canvas) {
-    final paint = Paint()..color = _metal;
-    for (final dx in [74.0, 130.0]) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(dx, 176, 18, 12),
-          const Radius.circular(6),
-        ),
-        paint,
-      );
+  /// Bangun ulang outline rounded-rect jadi path yang permukaannya bergetar
+  /// seperti jelly (port "soft-body membrane" ala GoSpeak).
+  Path _jellyPath(RRect rrect, TontonEngine e) {
+    final r = rrect.outerRect;
+    final rad = math.min(rrect.tlRadius.x, math.min(r.width, r.height) / 2);
+    final amp = 1.1 + e.sq.abs() * 6 + e.ripple * 2.2;
+
+    final pts = <Offset>[];
+    final nrm = <Offset>[];
+
+    void push(Offset p, Offset n) {
+      if (pts.isNotEmpty && (pts.last - p).distance < 0.01) return;
+      pts.add(p);
+      nrm.add(n);
     }
+
+    const segs = 10;
+    void edge(
+      double x0,
+      double y0,
+      double x1,
+      double y1,
+      double nx,
+      double ny,
+    ) {
+      for (var i = 0; i <= segs; i++) {
+        final t = i / segs;
+        push(Offset(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t), Offset(nx, ny));
+      }
+    }
+
+    void arc(Offset c, double a0, double a1) {
+      const steps = 12;
+      for (var i = 0; i <= steps; i++) {
+        final a = a0 + (a1 - a0) * i / steps;
+        final d = Offset(math.cos(a), math.sin(a));
+        push(c + d * rad, d);
+      }
+    }
+
+    edge(r.left + rad, r.top, r.right - rad, r.top, 0, -1); // atas
+    arc(Offset(r.right - rad, r.top + rad), -math.pi / 2, 0); // kanan atas
+    edge(r.right, r.top + rad, r.right, r.bottom - rad, 1, 0); // kanan
+    arc(Offset(r.right - rad, r.bottom - rad), 0, math.pi / 2); // kanan bawah
+    edge(r.right - rad, r.bottom, r.left + rad, r.bottom, 0, 1); // bawah
+    arc(
+      Offset(r.left + rad, r.bottom - rad),
+      math.pi / 2,
+      math.pi,
+    ); // kiri bawah
+    edge(r.left, r.bottom - rad, r.left, r.top + rad, -1, 0); // kiri
+    arc(Offset(r.left + rad, r.top + rad), math.pi, math.pi * 1.5); // kiri atas
+
+    final out = Path();
+    for (var i = 0; i < pts.length; i++) {
+      final wob = math.sin(i * 0.42 + e.time * 5.2) * amp;
+      final p = pts[i] + nrm[i] * wob;
+      if (i == 0) {
+        out.moveTo(p.dx, p.dy);
+      } else {
+        out.lineTo(p.dx, p.dy);
+      }
+    }
+    out.close();
+    return out;
   }
 
-  // ------------------------------------------------------------ lengan
-  void _drawArm(Canvas canvas, TontonEngine e) {
-    final raise = e.armRaise.clamp(0.0, 1.0);
-    if (raise < 0.02 && e.gestureKind == null) return;
-
-    final swing =
-        math.sin(e.time * (e.gestureKind == 'wave' ? 9 : 5)) * 0.26 * raise;
-    final angle = e.pointTo != null
-        ? e.armAngle
-        : -0.95 + (1 - raise) * 1.45 + swing;
-    final armLen = 16.0 + raise * 15.0;
-
-    canvas.save();
-    canvas.translate(184, 118);
-    canvas.rotate(angle);
-
-    final arm = Paint()
-      ..color = _body
-      ..strokeWidth = 9
-      ..strokeCap = StrokeCap.round;
-    final armEnd = Offset(armLen, -armLen * 0.6);
-    canvas.drawLine(Offset.zero, armEnd, arm);
-
-    final handPaint = Paint()..color = _body;
-    final border = Paint()
-      ..color = const Color(0x40FFFFFF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-
-    final handCenter = armEnd + const Offset(7, -6);
-    for (var i = 0; i < 3; i++) {
-      final c = handCenter + Offset(-5.5 + i * 5.5, -8);
-      canvas.drawCircle(c, 3.3, handPaint);
-      canvas.drawCircle(c, 3.3, border);
-    }
-    canvas.drawCircle(handCenter, 8.2, handPaint);
-    canvas.drawCircle(handCenter, 8.2, border);
-    canvas.drawCircle(handCenter + const Offset(-8.5, 2.5), 3.4, handPaint);
-    canvas.drawCircle(handCenter + const Offset(-8.5, 2.5), 3.4, border);
-
-    canvas.restore();
+  // ------------------------------------------------------------ riak jelly
+  void _drawRipple(Canvas canvas, TontonEngine e) {
+    if (e.ripple <= 0.01) return;
+    final c = const Rect.fromLTWH(34, 42, 152, 138).center;
+    final r = 14 + (1 - e.ripple) * 72;
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..color = Colors.white.withValues(alpha: e.ripple * 0.32)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2 + e.ripple * 3.5,
+    );
   }
 
   // ------------------------------------------------------------ layar

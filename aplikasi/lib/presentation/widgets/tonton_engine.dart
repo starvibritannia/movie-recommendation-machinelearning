@@ -154,14 +154,26 @@ class TontonEngine {
   /// Bukaan mulut paksa (nelan). 1 = lebar, lalu decay ke 0.
   double gulp = 0;
 
+  /// Offset "membran" layar: muka tertinggal di belakang badan (efek jelly).
+  double lagX = 0;
+  double lagY = 0;
+
+  /// Riak jelly di badan setelah disentuh (1 -> 0).
+  double ripple = 0;
+
+  /// Overshoot singkat saat ekspresi berganti.
+  double exprPop = 0;
+  double _exprPopT0 = -10;
+
+  double _blinkTarget = 1;
+
+  // ayunan badan (pengganti lambaian tangan; TonTon sekarang tanpan tangan)
+  double _swayT0 = 0;
+  double _swayMs = 0;
+  double swayAmt = 0;
+
   /// Baris teks yang "masuk" ke layar TV (kata kunci).
   final List<String> screenLines = [];
-
-  double armRaise = 0;
-  double armAngle = -0.8;
-  double _armG = 0;
-  double _armGv = 0;
-  Offset? pointTo;
 
   String? gestureKind;
   double _gestureUntil = 0;
@@ -268,15 +280,25 @@ class TontonEngine {
     // lean
     lean += (leanTarget - lean) * math.min(1, 5 * dt);
 
-    // lengan
-    final mode = gestureKind != null;
-    final lk = mode ? 200.0 : 110.0;
-    final lc = mode ? 22.0 : 21.0;
-    _armGv += (lk * (mode ? 1 : 0) - lc * _armGv) * dt;
-    _armG = _clamp(_armG + _armGv * dt, 0, 1.15);
-    armRaise = math.max(wave, _armG);
-    final baseAngle = pointTo != null ? _angleTo(pointTo!) : -0.8;
-    armAngle += _angleDelta(baseAngle, armAngle) * math.min(1, 10 * dt);
+    // "membran" layar: muka tertinggal sedikit di belakang badan (efek jelly).
+    lagX += ((-pos.dx * 0.10) - lagX) * math.min(1, 7 * dt);
+    lagY += ((-pos.dy * 0.10 + sq * 16) - lagY) * math.min(1, 7 * dt);
+
+    // kedip dihaluskan (bukan snap)
+    blink += (_blinkTarget - blink) * math.min(1, 38 * dt);
+
+    // riak jelly habis disentuh
+    ripple = math.max(0, ripple - 2.2 * dt);
+
+    // "pop" ekspresi: overshoot singkat saat ekspresi berubah
+    final es = (time - _exprPopT0) / 0.3;
+    exprPop = (es >= 0 && es < 1) ? math.sin(es * math.pi * 2) * (1 - es) : 0;
+
+    // ayunan badan (pengganti lambaian tangan)
+    final sws = (time - _swayT0) / (_swayMs > 0 ? _swayMs : 1);
+    swayAmt = (sws >= 0 && sws < 1)
+        ? math.sin(math.pi * sws) * math.sin(time * 9) * 0.22
+        : 0;
 
     // pandangan
     gazeX += (_gazeTX - gazeX) * math.min(1, 12 * dt);
@@ -330,13 +352,17 @@ class TontonEngine {
           time +
           (_rng.nextDouble() < 0.18 ? 0.22 : 2.2 + 3.4 * _rng.nextDouble());
     }
-    blink = (!reducedMotion && time < _blinkUntil) ? 0.1 : 1.0;
+    double blinkTarget = (!reducedMotion && time < _blinkUntil) ? 0.1 : 1.0;
 
     // ngantuk
     final ds = (time - _drowseT0) / (_drowseMs > 0 ? _drowseMs : 1);
     if (!reducedMotion && !asleep && ds >= 0 && ds < 1) {
-      blink = math.min(blink, 1 - 0.88 * math.pow(math.sin(math.pi * ds), 0.7));
+      blinkTarget = math.min(
+        blinkTarget,
+        1 - 0.88 * math.pow(math.sin(math.pi * ds), 0.7),
+      );
     }
+    _blinkTarget = blinkTarget;
 
     // habisnya override ekspresi
     if (_overrideExpression != null &&
@@ -375,7 +401,7 @@ class TontonEngine {
         1.1,
       );
     } else {
-      gesture('wave', 1400);
+      sway();
     }
   }
 
@@ -415,6 +441,7 @@ class TontonEngine {
     baseExpression = e;
     _overrideExpression = null;
     _furyStep = 0;
+    _exprPopT0 = time;
   }
 
   void setTalking(bool v) {
@@ -476,6 +503,7 @@ class TontonEngine {
   /// Buka mulut lebar sebentar (efek nelan).
   void swallow([double amount = 1]) {
     gulp = math.max(gulp, amount);
+    ripple = math.max(ripple, 0.7);
     squish(7);
   }
 
@@ -500,6 +528,14 @@ class TontonEngine {
     squish(big ? 3.8 : 2.4);
   }
 
+  /// Ayunan badan (pengganti lambaian tangan).
+  void sway([double ms = 1400]) {
+    if (reducedMotion) return;
+    _swayT0 = time;
+    _swayMs = ms / 1000.0;
+    squish(3);
+  }
+
   void gesture(String kind, [double ms = 1200]) {
     _stopGesture();
     if (reducedMotion) return;
@@ -515,7 +551,6 @@ class TontonEngine {
 
   void _stopGesture() {
     gestureKind = null;
-    pointTo = null;
     if (_feelBefore != null) {
       feel = _feelBefore!;
       _feelBefore = null;
@@ -580,6 +615,7 @@ class TontonEngine {
 
   void poke(Offset local) {
     sqv += 2 * feel.dent;
+    ripple = 1;
     _tiltAmt = (local.dx - pos.dx) >= 0 ? 0.18 : -0.18;
     _tiltT0 = time;
     _tiltMs = 0.28;
@@ -609,6 +645,7 @@ class TontonEngine {
   void _setOverride(MascotExpression e, double seconds) {
     _overrideExpression = e;
     _overrideUntil = time + seconds;
+    _exprPopT0 = time;
   }
 
   void _startFury() {
@@ -655,21 +692,6 @@ class TontonEngine {
   }
 
   // ------------------------------------------------------------ util
-  double _angleTo(Offset p) {
-    const anchor = Offset(176, 124);
-    return math.atan2(p.dy - anchor.dy, p.dx - anchor.dx);
-  }
-
-  double _angleDelta(double target, double current) {
-    var d = target - current;
-    while (d > math.pi) {
-      d -= 2 * math.pi;
-    }
-    while (d < -math.pi) {
-      d += 2 * math.pi;
-    }
-    return d;
-  }
 }
 
 /// Pemegang engine + sumber notifikasi untuk widget TonTon.
@@ -698,6 +720,7 @@ class MascotController extends ChangeNotifier {
   void glance(double x, double y, [double ms = 900]) => engine.glance(x, y, ms);
   void nod([bool big = false]) => engine.nod(big);
   void gesture(String kind, [double ms = 1200]) => engine.gesture(kind, ms);
+  void sway([double ms = 1400]) => engine.sway(ms);
   void tilt(double amount, [double ms = 300]) => engine.tilt(amount, ms);
   void drowse([double ms = 1200]) => engine.drowse(ms);
   void poke(Offset local) => engine.poke(local);

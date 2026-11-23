@@ -8,6 +8,7 @@ import '../../domain/entities/movie.dart';
 import '../providers/watchlist_provider.dart';
 import '../utils/watchlist_toggler.dart';
 import '../widgets/app_scaffold.dart';
+import '../widgets/jelly_press.dart';
 import '../widgets/movie_card.dart';
 import 'mascot_page.dart';
 import 'results_page.dart';
@@ -57,15 +58,40 @@ class WatchlistPage extends StatelessWidget {
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed:
+              JellyPress(
+                onTap:
                     onFindFilms ??
                     () {
                       Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const MascotPage()),
                       );
                     },
-                child: const Text('Cari film dulu'),
+                pressedScale: 0.06,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 26,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.accentGradient,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accent.withValues(alpha: 0.4),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    'Cari film dulu',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

@@ -1,0 +1,9 @@
+# Folder modeling
+model/
+data/processed/
+data/raw/*.zip
+!data/raw/*.csv
+*.ipynb_checkpoints/
+__pycache__/
+*.pkl
+*.joblib

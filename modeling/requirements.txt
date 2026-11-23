@@ -1,0 +1,9 @@
+# Requirements Tahap 2 & 3 (Dataset, EDA, Preprocessing, Modeling)
+# Python 3.11
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.5
+matplotlib>=3.9
+seaborn>=0.13
+joblib>=1.4
+jupyter>=1.0

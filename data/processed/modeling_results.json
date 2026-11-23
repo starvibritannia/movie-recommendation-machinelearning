@@ -1,0 +1,251 @@
+{
+  "winner": "K-Means",
+  "split": {
+    "train_size": 101818,
+    "test_size": 25455,
+    "rasio": "80%/20%",
+    "per_algoritma": {
+      "K-Means": {
+        "train_silhouette": 0.339,
+        "test_silhouette": 0.3357,
+        "selisih_silhouette": 0.0033
+      },
+      "Agglomerative": {
+        "train_silhouette": 0.339,
+        "test_silhouette": 0.3357,
+        "selisih_silhouette": 0.0033
+      },
+      "DBSCAN": {
+        "train_silhouette": 0.4551,
+        "test_silhouette": null,
+        "selisih_silhouette": null
+      }
+    }
+  },
+  "metrics": {
+    "K-Means": {
+      "train": {
+        "n_clusters": 2,
+        "noise_points": 0,
+        "silhouette": 0.339,
+        "davies_bouldin": 1.2245,
+        "calinski_harabasz": 20544.96
+      },
+      "test": {
+        "n_clusters": 2,
+        "noise_points": 0,
+        "silhouette": 0.3357,
+        "davies_bouldin": 1.2131,
+        "calinski_harabasz": 5380.44
+      }
+    },
+    "Agglomerative": {
+      "train": {
+        "n_clusters": 2,
+        "noise_points": 0,
+        "silhouette": 0.339,
+        "davies_bouldin": 1.2246,
+        "calinski_harabasz": 20544.96
+      },
+      "test": {
+        "n_clusters": 2,
+        "noise_points": 0,
+        "silhouette": 0.3357,
+        "davies_bouldin": 1.2131,
+        "calinski_harabasz": 5380.44
+      }
+    },
+    "DBSCAN": {
+      "train": {
+        "n_clusters": 2,
+        "noise_points": 143,
+        "silhouette": 0.4551,
+        "davies_bouldin": 0.756,
+        "calinski_harabasz": 205.0
+      },
+      "test": null
+    }
+  },
+  "detail": {
+    "K-Means": {
+      "k": 2,
+      "tuning": [
+        {
+          "k": 2,
+          "inertia": 653541.4097386397,
+          "silhouette": 0.3381
+        },
+        {
+          "k": 3,
+          "inertia": 572217.4947139074,
+          "silhouette": 0.1587
+        },
+        {
+          "k": 4,
+          "inertia": 513601.11136474984,
+          "silhouette": 0.149
+        },
+        {
+          "k": 5,
+          "inertia": 477448.4406018247,
+          "silhouette": 0.1423
+        },
+        {
+          "k": 6,
+          "inertia": 454325.5539919166,
+          "silhouette": 0.1366
+        },
+        {
+          "k": 7,
+          "inertia": 442856.19030579046,
+          "silhouette": 0.1151
+        },
+        {
+          "k": 8,
+          "inertia": 432249.22390663024,
+          "silhouette": 0.104
+        },
+        {
+          "k": 9,
+          "inertia": 423311.38708665315,
+          "silhouette": 0.1005
+        },
+        {
+          "k": 10,
+          "inertia": 414336.4482664051,
+          "silhouette": 0.1016
+        },
+        {
+          "k": 11,
+          "inertia": 407035.6424607404,
+          "silhouette": 0.0887
+        },
+        {
+          "k": 12,
+          "inertia": 400963.11915231403,
+          "silhouette": 0.0823
+        }
+      ]
+    },
+    "Agglomerative": {
+      "k": 2,
+      "tuning": [
+        {
+          "k": 2,
+          "silhouette": 0.3314
+        },
+        {
+          "k": 3,
+          "silhouette": 0.1339
+        },
+        {
+          "k": 4,
+          "silhouette": 0.1398
+        },
+        {
+          "k": 5,
+          "silhouette": 0.1115
+        },
+        {
+          "k": 6,
+          "silhouette": 0.0871
+        },
+        {
+          "k": 7,
+          "silhouette": 0.0782
+        },
+        {
+          "k": 8,
+          "silhouette": 0.0612
+        },
+        {
+          "k": 9,
+          "silhouette": 0.0621
+        },
+        {
+          "k": 10,
+          "silhouette": 0.0635
+        },
+        {
+          "k": 11,
+          "silhouette": 0.0598
+        },
+        {
+          "k": 12,
+          "silhouette": 0.0447
+        }
+      ],
+      "metode": "ward(sampel train) -> centroid -> kmeans"
+    },
+    "DBSCAN": {
+      "eps": 2.2,
+      "min_samples": 10,
+      "tuning": [
+        {
+          "eps": 0.8,
+          "n_clusters": 13,
+          "noise_points": 29271,
+          "silhouette": 0.2289,
+          "davies_bouldin": 1.4915,
+          "calinski_harabasz": 81.18
+        },
+        {
+          "eps": 1.0,
+          "n_clusters": 17,
+          "noise_points": 28986,
+          "silhouette": 0.1747,
+          "davies_bouldin": 1.6745,
+          "calinski_harabasz": 69.27
+        },
+        {
+          "eps": 1.2,
+          "n_clusters": 26,
+          "noise_points": 25208,
+          "silhouette": -0.2027,
+          "davies_bouldin": 1.4883,
+          "calinski_harabasz": 25.32
+        },
+        {
+          "eps": 1.5,
+          "n_clusters": 46,
+          "noise_points": 13506,
+          "silhouette": -0.2259,
+          "davies_bouldin": 1.6553,
+          "calinski_harabasz": 42.51
+        },
+        {
+          "eps": 1.8,
+          "n_clusters": 6,
+          "noise_points": 2454,
+          "silhouette": 0.0411,
+          "davies_bouldin": 0.9977,
+          "calinski_harabasz": 18.43
+        },
+        {
+          "eps": 2.2,
+          "n_clusters": 2,
+          "noise_points": 143,
+          "silhouette": 0.4551,
+          "davies_bouldin": 0.756,
+          "calinski_harabasz": 205.0
+        },
+        {
+          "eps": 2.6,
+          "n_clusters": 1,
+          "silhouette": null,
+          "davies_bouldin": null,
+          "calinski_harabasz": null
+        },
+        {
+          "eps": 3.0,
+          "n_clusters": 1,
+          "silhouette": null,
+          "davies_bouldin": null,
+          "calinski_harabasz": null
+        }
+      ],
+      "metode": "sub-sampel training (O(n^2) tidak feasible)",
+      "subsample_idx": "[73680  6231 81229 ... 63579 65654 89801]"
+    }
+  }
+}

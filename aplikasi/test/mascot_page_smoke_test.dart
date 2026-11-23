@@ -20,6 +20,11 @@ class _FakeRepo implements RecommendationRepository {
 
 void main() {
   testWidgets('alur bouncy TonTon jalan tanpa error', (tester) async {
+    // Ukuran permukaan disamakan dengan HP sungguhan (layar panel butuh ruang).
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+
     await tester.pumpWidget(
       ChangeNotifierProvider(
         create: (_) => RecommendationProvider(repository: _FakeRepo()),
@@ -55,18 +60,26 @@ void main() {
 
     // Slider muncul.
     expect(find.text('Rating minimum'), findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 700));
+    expect(find.text('ATUR SELERA'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 900));
+    // Tombol "lanjut" wajib terlihat penuh (nggak terpotong bawah layar).
+    final nextRect = tester.getRect(find.text('Siap, lanjut!'));
+    expect(nextRect.bottom, lessThan(800), reason: 'tombol lanjut terpotong');
     await tester.tap(find.text('Siap, lanjut!'), warnIfMissed: false);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump(const Duration(milliseconds: 500));
 
     // Kata kunci muncul.
-    expect(find.text('Cariin dong'), findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_double_arrow_up_rounded), findsOneWidget);
+    expect(find.text('KATA KUNCI'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 700));
     await tester.enterText(find.byType(TextField), 'ruang angkasa');
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.text('Cariin dong'), warnIfMissed: false);
+    await tester.tap(
+      find.byIcon(Icons.keyboard_double_arrow_up_rounded),
+      warnIfMissed: false,
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump(const Duration(milliseconds: 500));
