@@ -17,7 +17,11 @@ import 'results_page.dart';
 /// Data disimpan lokal di HP lewat shared_preferences, jadi nggak butuh login
 /// dan tetap ada setelah aplikasi ditutup.
 class WatchlistPage extends StatelessWidget {
-  const WatchlistPage({super.key});
+  /// Dipanggil saat user menekan "Cari film dulu". Kalau null, halaman maskot
+  /// di-push sebagai route baru (fallback).
+  final VoidCallback? onFindFilms;
+
+  const WatchlistPage({super.key, this.onFindFilms});
 
   @override
   Widget build(BuildContext context) {
@@ -54,11 +58,13 @@ class WatchlistPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const MascotPage()));
-                },
+                onPressed:
+                    onFindFilms ??
+                    () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const MascotPage()),
+                      );
+                    },
                 child: const Text('Cari film dulu'),
               ),
             ],

@@ -38,6 +38,12 @@ backend/app/data/catalog.json
 .vscode/
 .idea/
 .DS_Store
+
+# ================= Catatan lokal (tidak di-push) =================
+# Folder riset/referensi milik pemilik proyek, sengaja tidak dimasukkan ke repo.
+UI Referensi/
+Progress/
+Konsep dan referensi/
 Thumbs.db
 desktop.ini
 *.log

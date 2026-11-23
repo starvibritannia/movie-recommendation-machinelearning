@@ -21,6 +21,9 @@ class Movie {
   /// Label klaster hasil clustering, misal 3 = "Action/Sci-Fi modern".
   final int? clusterLabel;
 
+  /// URL poster film (opsional), biasanya diambil dari IMDb ID.
+  final String? posterUrl;
+
   const Movie({
     required this.movieId,
     required this.movieName,
@@ -35,6 +38,7 @@ class Movie {
     this.stars = const [],
     this.matchPercent,
     this.clusterLabel,
+    this.posterUrl,
   });
 
   /// Judul + tahun, dipakai di app bar halaman detail.

@@ -22,7 +22,14 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  static const List<Widget> _pages = [MascotPage(), WatchlistPage()];
+  late final List<Widget> _pages = [
+    const MascotPage(),
+    WatchlistPage(
+      onFindFilms: () {
+        if (mounted) setState(() => _currentIndex = 0);
+      },
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {

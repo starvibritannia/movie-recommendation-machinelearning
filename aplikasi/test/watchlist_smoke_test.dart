@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:film_recommendation/data/datasources/watchlist_local_datasource.dart';
+import 'package:film_recommendation/data/services/poster_service.dart';
 import 'package:film_recommendation/domain/entities/movie.dart';
 import 'package:film_recommendation/presentation/providers/watchlist_provider.dart';
 import 'package:film_recommendation/presentation/utils/watchlist_toggler.dart';
@@ -41,19 +42,23 @@ void main() {
 
     const movie = Movie(movieId: 'tt2', movieName: 'Interstellar');
 
+    final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
-      ChangeNotifierProvider<WatchlistProvider>.value(
-        value: provider,
-        child: MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: ListenableBuilder(
-                listenable: provider,
-                builder: (context, _) => MovieCard(
-                  movie: movie,
-                  rank: 1,
-                  isSaved: provider.isSaved(movie.movieId),
-                  onToggleBookmark: () => toggleWatchlist(context, movie),
+      Provider<PosterService>.value(
+        value: PosterService(prefs),
+        child: ChangeNotifierProvider<WatchlistProvider>.value(
+          value: provider,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: ListenableBuilder(
+                  listenable: provider,
+                  builder: (context, _) => MovieCard(
+                    movie: movie,
+                    rank: 1,
+                    isSaved: provider.isSaved(movie.movieId),
+                    onToggleBookmark: () => toggleWatchlist(context, movie),
+                  ),
                 ),
               ),
             ),

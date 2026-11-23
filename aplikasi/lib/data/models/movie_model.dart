@@ -19,6 +19,7 @@ class MovieModel extends Movie {
     super.stars = const [],
     super.matchPercent,
     super.clusterLabel,
+    super.posterUrl,
   });
 
   factory MovieModel.fromJson(Map<String, dynamic> json) {
@@ -38,6 +39,7 @@ class MovieModel extends Movie {
       stars: _parseList(json['star'] ?? json['stars']),
       matchPercent: _toDouble(json['match_percent']),
       clusterLabel: _toInt(json['cluster_label']),
+      posterUrl: _toNullable(json['poster_url']),
     );
   }
 
@@ -57,6 +59,7 @@ class MovieModel extends Movie {
       stars: movie.stars,
       matchPercent: movie.matchPercent,
       clusterLabel: movie.clusterLabel,
+      posterUrl: movie.posterUrl,
     );
   }
 
@@ -76,6 +79,7 @@ class MovieModel extends Movie {
       'star': stars,
       'match_percent': matchPercent,
       'cluster_label': clusterLabel,
+      'poster_url': posterUrl,
     };
   }
 
@@ -100,6 +104,12 @@ class MovieModel extends Movie {
   static String _toNonEmpty(dynamic value, {required String fallback}) {
     final text = value?.toString().trim() ?? '';
     return text.isEmpty ? fallback : text;
+  }
+
+  /// Kosong -> null (dipakai untuk `poster_url` yang opsional).
+  static String? _toNullable(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+    return text.isEmpty ? null : text;
   }
 
   /// Genre bisa datang sebagai `List<String>` atau string "Action, Drama".

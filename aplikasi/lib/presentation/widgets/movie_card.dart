@@ -5,6 +5,7 @@ import '../../core/utils/formatters.dart';
 import '../../domain/entities/movie.dart';
 import 'glass_card.dart';
 import 'match_badge.dart';
+import 'movie_poster.dart';
 
 /// Kartu film di halaman hasil/trending/watchlist.
 ///
@@ -38,7 +39,12 @@ class MovieCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _PosterPlaceholder(title: movie.movieName),
+          MoviePoster(
+            movieId: movie.movieId,
+            title: movie.movieName,
+            width: 74,
+            height: 104,
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -137,38 +143,6 @@ class _BookmarkButton extends StatelessWidget {
             saved ? Icons.bookmark : Icons.bookmark_border,
             size: 20,
             color: saved ? AppColors.accent : AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Placeholder poster: dataset nggak punya URL gambar, jadi kita tampilkan
-/// kotak gradien dengan huruf awal judul. Kalau nanti backend menambah
-/// poster_url, cukup ganti widget ini jadi Image.network.
-class _PosterPlaceholder extends StatelessWidget {
-  final String title;
-
-  const _PosterPlaceholder({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 74,
-      height: 104,
-      decoration: BoxDecoration(
-        gradient: AppColors.accentGradient,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.glassBorder),
-      ),
-      child: Center(
-        child: Text(
-          title.isEmpty ? '?' : title.substring(0, 1).toUpperCase(),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
           ),
         ),
       ),

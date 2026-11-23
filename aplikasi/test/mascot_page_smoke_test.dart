@@ -43,7 +43,8 @@ void main() {
     // Pilih genre + konfirmasi.
     await tester.pump(const Duration(milliseconds: 800));
     await tester.tap(find.text('Sci-Fi'), warnIfMissed: false);
-    await tester.pump(const Duration(milliseconds: 900));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Oke, lanjut!'), findsOneWidget);
     // Beri waktu animasi pop tombol selesai sebelum ditap.
     await tester.pump(const Duration(milliseconds: 600));
@@ -63,9 +64,12 @@ void main() {
     // Kata kunci muncul.
     expect(find.text('Cariin dong'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 700));
+    await tester.enterText(find.byType(TextField), 'ruang angkasa');
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.tap(find.text('Cariin dong'), warnIfMissed: false);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 500));
 
     // Fake repo balikin kosong -> fase selesai.
     expect(find.text('Cari lagi'), findsOneWidget);

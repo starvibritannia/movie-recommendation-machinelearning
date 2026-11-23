@@ -11,6 +11,7 @@ import '../utils/watchlist_toggler.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/match_badge.dart';
 import '../widgets/movie_card.dart';
+import '../widgets/movie_poster.dart';
 
 /// Halaman hasil: daftar film yang direkomendasikan backend.
 class ResultsPage extends StatelessWidget {
@@ -125,7 +126,13 @@ class DetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _PosterHero(movie: movie),
+            MoviePoster(
+              movieId: movie.movieId,
+              title: movie.movieName,
+              width: double.infinity,
+              height: 240,
+              radius: const BorderRadius.all(Radius.circular(20)),
+            ),
             const SizedBox(height: 20),
             Row(
               children: [
@@ -214,37 +221,6 @@ class DetailPage extends StatelessWidget {
   /// Tambah/hapus film dari watchlist, lalu kasih feedback ke user.
   void _toggleBookmark(BuildContext context, Movie movie) {
     toggleWatchlist(context, movie);
-  }
-}
-
-/// Hero poster besar (placeholder, karena dataset nggak punya URL poster).
-class _PosterHero extends StatelessWidget {
-  final Movie movie;
-
-  const _PosterHero({required this.movie});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 240,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: AppColors.accentGradient,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Center(
-        child: Text(
-          movie.movieName.isEmpty
-              ? '?'
-              : movie.movieName.substring(0, 1).toUpperCase(),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 72,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
   }
 }
 

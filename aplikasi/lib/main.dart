@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'data/datasources/recommendation_local_datasource.dart';
 import 'data/datasources/recommendation_remote_datasource.dart';
 import 'data/datasources/watchlist_local_datasource.dart';
 import 'data/repositories/recommendation_repository_impl.dart';
+import 'data/services/poster_service.dart';
 import 'domain/repositories/recommendation_repository.dart';
 import 'presentation/providers/recommendation_provider.dart';
 import 'presentation/providers/watchlist_provider.dart';
 
-void main() {
-  runApp(const FilmRecommendationApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  runApp(FilmRecommendationApp(prefs: prefs));
 }
 
 /// Aplikasi root + composition root.
@@ -19,7 +23,9 @@ void main() {
 /// Di sinilah semua object dirangkai (dependency injection manual). Kalau
 /// nanti mau pakai package get_it atau injectable, cukup ubah bagian ini.
 class FilmRecommendationApp extends StatelessWidget {
-  const FilmRecommendationApp({super.key});
+  final SharedPreferences prefs;
+
+  const FilmRecommendationApp({super.key, required this.prefs});
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +43,7 @@ class FilmRecommendationApp extends StatelessWidget {
         // Data source dipakai bareng oleh repository & halaman trending.
         Provider<RecommendationLocalDataSource>.value(value: localDataSource),
         Provider<WatchlistLocalDataSource>.value(value: watchlistDataSource),
+        Provider<PosterService>.value(value: PosterService(prefs)),
 
         // State halaman.
         ChangeNotifierProvider(
