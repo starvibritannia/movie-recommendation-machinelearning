@@ -15,6 +15,7 @@ Buka docs interaktif:
 """
 
 from pathlib import Path
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,11 +43,13 @@ app = FastAPI(
     description="Stub backend untuk sistem rekomendasi film 2-tahap (clustering + similarity).",
 )
 
-# CORS dibuka lebar supaya gampang dites dari browser / Swagger UI.
-# Di produksi sebaiknya dipersempit ke origin aplikasi saja.
+# Origin yang boleh mengakses API. Di produksi sebaiknya diisi domain aplikasi
+# (pisah koma kalau lebih dari satu); "*" buat uji coba lokal.
+_allowed = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

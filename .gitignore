@@ -58,3 +58,9 @@ Panduan/
 Mockup/
 aplikasi/layout_preview.png
 aplikasi/maskot_preview.png
+
+# Konfigurasi server deploy (isi sendiri, jangan di-push)
+deploy/.env
+
+# Dokumen pemahaman proyek (tidak ikut dipush)
+docs/PAHAMAN_PROYEK.md

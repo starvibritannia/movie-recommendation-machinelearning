@@ -6,12 +6,20 @@ class ApiConstants {
   ApiConstants._();
 
   // ----------------------------------------------------------------------------
-  // HP fisik (uji coba sekarang): satu Wi-Fi dengan komputer ini.
-  // Android emulator : 10.0.2.2 = localhost di mesin host.
-  // iOS simulator    : localhost
-  // Kalau IP komputer berubah, ganti di sini lalu build ulang.
+  // Base URL backend.
+  //
+  // Dioverride saat build, jadi nggak perlu edit kode saat pindah server:
+  //
+  //   flutter build apk --dart-define=API_BASE_URL=https://api.domain-kamu.com
+  //   flutter run      --dart-define=API_BASE_URL=http://10.0.2.2:8000
+  //
+  // Catatan: bawaan di bawah itu alamat lokal, jadi build release buat publik
+  // WAJIB dibarengi --dart-define=API_BASE_URL=... (lihat docs/DEPLOYMENT.md).
   // ----------------------------------------------------------------------------
-  static const String baseUrl = 'http://192.168.1.7:8000';
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://192.168.1.7:8000',
+  );
 
   /// Endpoint health check, dipakai buat tahu server FastAPI hidup atau tidak.
   static const String healthEndpoint = '/health';

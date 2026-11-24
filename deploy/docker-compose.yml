@@ -1,0 +1,33 @@
+services:
+  api:
+    build: ../backend
+    image: nevie-api:latest
+    restart: unless-stopped
+    expose:
+      - "8000"          # cuma bisa diakses dari dalam jaringan Docker (lewat Caddy)
+    environment:
+      # Dipisah dengan koma kalau mau batasi origin. "*" = terbuka.
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+    # Bundle model 154 MB dimuat sekali saat start; kalau RAM VPS 4 GB sebaiknya
+    # jangan tambah worker kedua (uvicorn --workers 1 sudah diset di Dockerfile).
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - API_DOMAIN=${API_DOMAIN:?isi API_DOMAIN di deploy/.env}
+      - API_HOST=${API_HOST:-api}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  caddy-data:
+  caddy-config:
