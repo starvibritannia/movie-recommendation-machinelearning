@@ -47,6 +47,10 @@ class MascotPage extends StatefulWidget {
   State<MascotPage> createState() => _MascotPageState();
 }
 
+/// Ruang kosong di atas papan, dipakai tiket penjuru yang menjulang keluar
+/// kotak papan. Tanpa ini klip gulungan bakal memotong tiketnya.
+const double _badgeRoom = 34;
+
 class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   _Phase _phase = _Phase.greeting;
 
@@ -68,7 +72,7 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   );
   late final AnimationController _chipExit = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 620),
+    duration: const Duration(milliseconds: 480),
   );
   late final AnimationController _sliderEnter = AnimationController(
     vsync: this,
@@ -76,7 +80,7 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   );
   late final AnimationController _sliderExit = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 560),
+    duration: const Duration(milliseconds: 480),
   );
   late final AnimationController _keywordEnter = AnimationController(
     vsync: this,
@@ -92,6 +96,7 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
     vsync: this,
     duration: const Duration(milliseconds: 460),
   );
+
   late final AnimationController _invitePop = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 520),
@@ -103,8 +108,13 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   String? _keywordBubble;
   Offset _keywordFrom = Offset.zero;
 
+  /// Label tiket yang lagi terbang + titik asalnya di panggung.
+  String? _ticketLabel;
+  Offset? _ticketHome;
+
   Timer? _greetingTimer;
   Timer? _pendingTimer;
+  Timer? _slotTimer;
   Timer? _reactionTimer;
   Timer? _debounce;
 
@@ -157,6 +167,7 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   void dispose() {
     _greetingTimer?.cancel();
     _pendingTimer?.cancel();
+    _slotTimer?.cancel();
     _reactionTimer?.cancel();
     _debounce?.cancel();
     _keywordCtrl.dispose();
@@ -223,13 +234,26 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   }
 
   void _confirmGenre() {
+    // Papan digulung jadi tiket, tiket diterbangkan ke slot tape TonTon.
     _setPhase(_Phase.absorb);
     _mascot.hop(620);
     _mascot.squish(-4);
-    _mascot.swallow();
+    setState(() {
+      _ticketLabel = AppStrings.ticketGenre;
+      _ticketHome = _ticketHomePoint();
+    });
     _chipExit.forward(from: 0).whenComplete(() {
       if (!mounted) return;
       _pendingTimer = Timer(const Duration(milliseconds: 180), _goSliders);
+    });
+    _scheduleSwallow(440);
+  }
+
+  /// TonTon nelen pas tiketnya nyampe di slot tape.
+  void _scheduleSwallow(int millis) {
+    _slotTimer?.cancel();
+    _slotTimer = Timer(Duration(milliseconds: millis), () {
+      if (mounted) _mascot.swallow();
     });
   }
 
@@ -241,10 +265,16 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
 
   void _confirmSliders() {
     _setPhase(_Phase.sliderExit);
+    _mascot.squish(-3);
+    setState(() {
+      _ticketLabel = AppStrings.ticketSlider;
+      _ticketHome = _ticketHomePoint();
+    });
     _sliderExit.forward(from: 0).whenComplete(() {
       if (!mounted) return;
       _pendingTimer = Timer(const Duration(milliseconds: 120), _goKeyword);
     });
+    _scheduleSwallow(440);
   }
 
   void _goKeyword() {
@@ -305,6 +335,8 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
     context.read<RecommendationProvider>().resetFilters();
     _keywordCtrl.clear();
     _chipEnter.reset();
+    _slotTimer?.cancel();
+    setState(() => _ticketHome = null);
     _chipExit.reset();
     _sliderEnter.reset();
     _sliderExit.reset();
@@ -366,6 +398,31 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   /// Posisi mulut TonTon di koordinat panggung (mulut ada di layar).
   Offset _mouthPos(Offset center, double mSize) =>
       center + Offset(0, 14 * mSize / 220);
+
+  /// Titik asal tiket: bawah-tengah papan yang lagi menggulung.
+  Offset _ticketHomePoint() {
+    final center = _mascotCenter(_stageSize);
+    final mSize = _mascotSize(_stageSize);
+    final panelTop = center.dy + mSize / 2 + 8;
+    final panelBottom = _stageSize.height - AppLayout.navSpacer;
+    return Offset(center.dx, math.max(panelTop + 150, panelBottom - 26));
+  }
+
+  /// Posisi slot tape di badan TonTon (viewBox 220).
+  Offset _slotPos(Offset center, double mSize) =>
+      center + Offset(0, 52.5 * mSize / 220);
+
+  /// True saat papan sedang keluar dan tiketnya terbang ke slot.
+  bool get _ticketActive =>
+      _phase == _Phase.absorb || _phase == _Phase.sliderExit;
+
+  /// Progres keluar papan (0..1) untuk fase absorb / sliderExit.
+  /// Kurva easeInOutQuart (cubic-bezier(.76,0,.24,1)) ini referensi standar
+  /// buat tirai/shutter: akselerasi & deselerasi simetris, jadi gulungannya
+  /// terasa kayak kain, bukan kejutan.
+  double get _exitT => _phase == _Phase.absorb
+      ? Curves.easeInOutQuart.transform(_chipExit.value)
+      : Curves.easeInOutQuart.transform(_sliderExit.value);
 
   // ---------------------------------------------------------------- geometri
   /// Di fase slider/keyword maskot naik & mengecil supaya panelnya muat.
@@ -465,6 +522,12 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
                     if (_keywordBubble != null)
                       _buildKeywordBubble(center, mSize),
 
+                    // Papan menggulung jadi tiket + cahaya slot tape TonTon.
+                    if (_ticketActive) ...[
+                      _buildSlotGlow(center, mSize),
+                      _buildFlyingTicket(center, mSize),
+                    ],
+
                     // Tombol ajakan pertama.
                     if (_phase == _Phase.invite) _buildInvite(),
 
@@ -519,13 +582,12 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   // ---------------------------------------------------------------- genre
   Widget _buildGenrePanel(Offset center, double mSize) {
     final enterT = Curves.easeOutBack.transform(_chipEnter.value);
-    final exitT = Curves.easeInCubic.transform(_chipExit.value);
+    final exitT = Curves.easeInOutQuart.transform(_chipExit.value);
     final panelTop = center.dy + mSize / 2 + 8;
 
-    final scale = enterT * (1 - exitT * 0.55);
-    final opacity = enterT.clamp(0.0, 1.0) * (1 - exitT);
-    // Saat keluar, panel "diserap" ke arah maskot (ke atas).
-    final dy = (center.dy - panelTop) * exitT * 0.9;
+    // Papan "digulung" tanpa meremas kontennya: cukup proporsi yang kelihatan.
+    final roll = (enterT * (1 - exitT)).clamp(0.0, 1.0);
+    final opacity = (enterT * (1 - exitT * 0.7)).clamp(0.0, 1.0);
 
     return Positioned(
       left: 16,
@@ -533,14 +595,12 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
       top: panelTop,
       bottom: AppLayout.navSpacer,
       child: Opacity(
-        opacity: opacity.clamp(0.0, 1.0),
-        child: Transform.translate(
-          offset: Offset(0, dy),
-          child: Transform.scale(
-            scale: scale,
-            alignment: Alignment.topCenter,
-            child: _buildGenrePanelBody(),
-          ),
+        opacity: opacity,
+        // Ruang ekstra di atas klip supaya tiket penjuru nggak kepotong.
+        child: _RollClip(
+          t: roll,
+          room: _badgeRoom,
+          child: _buildGenrePanelBody(),
         ),
       ),
     );
@@ -560,7 +620,11 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
     return MarqueePanel(
       title: AppStrings.marqueeGenreTitle,
       subtitle: AppStrings.marqueeGenreSubtitle,
-      cornerBadge: const _GenreTicket(),
+      // Tiket papan disembunyikan pas papan digulung; tiket aslinya yang terbang.
+      cornerBadge: _ticketActive
+          ? null
+          : const _TicketStub(label: AppStrings.ticketGenre),
+      animateIn: true,
       footer: Row(
         children: [
           Expanded(
@@ -603,6 +667,75 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
                   selected: selected.contains(genre),
                   onTap: () => _toggleGenre(genre),
                 ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Papan yang menggulung berubah jadi tiket, lalu tiket meluncur ke slot tape.
+  Widget _buildFlyingTicket(Offset center, double mSize) {
+    final home = _ticketHome;
+    final label = _ticketLabel;
+    if (home == null || label == null) return const SizedBox.shrink();
+
+    final t = _exitT.clamp(0.0, 1.0);
+    // Fase 1: papan menggulung, tiket terbentuk di tempatnya.
+    final formT = (t / 0.42).clamp(0.0, 1.0);
+    // Fase 2: tiket meluncur ke slot tape TonTon.
+    final flyT = Curves.easeInOutCubic.transform(
+      ((t - 0.45) / 0.55).clamp(0.0, 1.0),
+    );
+    final pos = Offset.lerp(home, _slotPos(center, mSize), flyT)!;
+
+    final scale =
+        (0.35 + 0.65 * Curves.easeOutBack.transform(formT)) * (1 - flyT * 0.5);
+    final opacity = formT * (1 - flyT * 0.2);
+
+    return Positioned(
+      left: pos.dx - 60,
+      top: pos.dy - 17,
+      child: Opacity(
+        opacity: opacity.clamp(0.0, 1.0),
+        child: Transform.scale(
+          scale: scale,
+          child: Transform.rotate(
+            angle: -0.12 + flyT * 0.18,
+            child: _TicketStub(label: label),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Cahaya slot tape TonTon pas tiket masuk.
+  Widget _buildSlotGlow(Offset center, double mSize) {
+    final t = _exitT.clamp(0.0, 1.0);
+    // Baru menyala pas tiket nyaris nyampe.
+    final glow = ((t - 0.6) / 0.4).clamp(0.0, 1.0);
+    final slot = _slotPos(center, mSize);
+    final w = 62 * mSize / 220;
+
+    return Positioned(
+      left: slot.dx - w / 2,
+      top: slot.dy - w * 0.17,
+      child: IgnorePointer(
+        child: Container(
+          width: w,
+          height: w * 0.34,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(w * 0.17),
+            border: Border.all(
+              color: AppColors.accentLight.withValues(alpha: 0.2 + glow * 0.8),
+              width: 1.6 + glow,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accentLight.withValues(alpha: 0.4 * glow),
+                blurRadius: 14 + glow * 16,
+                spreadRadius: glow * 2,
+              ),
             ],
           ),
         ),
@@ -688,13 +821,11 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   // ---------------------------------------------------------------- slider
   Widget _buildSliders(Offset center, double mSize) {
     final enterT = Curves.easeOutBack.transform(_sliderEnter.value);
-    final exitT = Curves.easeInCubic.transform(_sliderExit.value);
+    final exitT = Curves.easeInOutQuart.transform(_sliderExit.value);
     final panelTop = center.dy + mSize / 2 + 8;
 
-    final scale = enterT * (1 - exitT * 0.55);
-    final opacity = enterT.clamp(0.0, 1.0) * (1 - exitT);
-    // Saat keluar, panel "diserap" ke arah maskot (ke atas).
-    final dy = (center.dy - panelTop) * exitT * 0.9;
+    final roll = (enterT * (1 - exitT)).clamp(0.0, 1.0);
+    final opacity = (enterT * (1 - exitT * 0.7)).clamp(0.0, 1.0);
 
     return Positioned(
       left: 16,
@@ -702,15 +833,8 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
       top: panelTop,
       bottom: AppLayout.navSpacer,
       child: Opacity(
-        opacity: opacity.clamp(0.0, 1.0),
-        child: Transform.translate(
-          offset: Offset(0, dy),
-          child: Transform.scale(
-            scale: scale,
-            alignment: Alignment.topCenter,
-            child: _buildSliderPanel(),
-          ),
-        ),
+        opacity: opacity,
+        child: _RollClip(t: roll, child: _buildSliderPanel()),
       ),
     );
   }
@@ -737,6 +861,7 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
     return MarqueePanel(
       title: AppStrings.marqueeSliderTitle,
       subtitle: AppStrings.marqueeSliderSubtitle,
+      animateIn: true,
       footer: staged(
         SizedBox(
           width: double.infinity,
@@ -874,6 +999,7 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
           child: MarqueePanel(
             title: AppStrings.marqueeKeywordTitle,
             subtitle: AppStrings.marqueeKeywordSubtitle,
+            animateIn: true,
             padding: const EdgeInsets.fromLTRB(18, 14, 12, 12),
             child: Row(
               children: [
@@ -989,9 +1115,11 @@ class _SwallowButton extends StatelessWidget {
   }
 }
 
-/// Tiket "TIKET GENRE" yang menempel miring di pojok kanan atas papan marquee.
-class _GenreTicket extends StatelessWidget {
-  const _GenreTicket();
+/// Stub tiket bergaya marquee: dipakai di pojok papan dan saat transisi.
+class _TicketStub extends StatelessWidget {
+  final String label;
+
+  const _TicketStub({required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -1017,7 +1145,7 @@ class _GenreTicket extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
@@ -1027,7 +1155,7 @@ class _GenreTicket extends StatelessWidget {
                 ),
                 SizedBox(width: 5),
                 Text(
-                  'TIKET GENRE',
+                  label,
                   style: TextStyle(
                     color: Color(0xFF3A1B05),
                     fontSize: 9,
@@ -1235,6 +1363,76 @@ class _PopInState extends State<_PopIn> with SingleTickerProviderStateMixin {
       },
     );
   }
+}
+
+/// Efek "gulung": panel dipotong dari tepi atas dan menciut ke bawahnya, jadi
+/// kontennya nggak pernah teremas (beda sama Transform.scale).
+///
+/// [t] = proporsi panel yang masih kelihatan (1 = penuh, 0 = hilang).
+class _RollClip extends StatelessWidget {
+  final double t;
+
+  /// Ruang tambahan di atas kotak yang ikut dipakai klip (mis. buat tiket
+  /// penjuru yang menjulang keluar papan).
+  final double room;
+  final Widget child;
+
+  const _RollClip({required this.t, required this.child, this.room = 0});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final edge = constraints.maxHeight * (1 - t) - room;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            ClipRect(
+              clipper: _RollClipper(t, room: room),
+              child: child,
+            ),
+            // Bayangan tipis di tepi gulungan biar dapat ketebalan fisik.
+            if (t > 0 && t < 1)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: edge - 8,
+                height: 16,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.35),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _RollClipper extends CustomClipper<Rect> {
+  final double t;
+  final double room;
+
+  const _RollClipper(this.t, {this.room = 0});
+
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTRB(0, size.height * (1 - t) - room, size.width, size.height);
+
+  @override
+  bool shouldReclip(covariant _RollClipper oldDelegate) =>
+      oldDelegate.t != t || oldDelegate.room != room;
 }
 
 /// Popup daftar rekomendasi.

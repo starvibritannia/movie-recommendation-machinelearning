@@ -61,6 +61,9 @@ class AppStrings {
   static const String marqueeKeywordTitle = 'KATA KUNCI';
   static const String marqueeKeywordSubtitle = 'SEMUA KATA BISA JADI PETUNJUK';
   static const String marqueeSelectedSuffix = 'dipilih';
+  // Label tiket yang dibentuk pas papan digulung sebelum pindah menu.
+  static const String ticketGenre = 'TIKET GENRE';
+  static const String ticketSlider = 'TIKET SELERA';
   static const String mascotAbsorb = 'Aku serap yang kamu pilih ya...';
   static const String mascotSlidersTitle = 'Atur selera kamu';
   static const String mascotSliderConfirm = 'Siap, lanjut!';
