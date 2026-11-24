@@ -3,26 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
-import 'glass_card.dart';
 
-/// Arah ekor bubble: ke bawah (maskot di bawah), ke kiri (maskot di kiri),
-/// atau ke atas (maskot di atas bubble).
-enum BubbleTail { bottom, left, top }
-
-/// Gelembung chat maskot yang muncul dari maskotnya.
+/// Gelembung chat maskot: panel gelap keemasan yang duduk di bawah sorotan
+/// hangat dari atas.
 ///
-/// Bubble diletakkan di samping maskot dengan ekor menunjuk ke arahnya, jadi
-/// kesan "keluar dari maskot" terasa nyata. Teks mengetik huruf demi huruf
-/// dengan kursor berkedip.
+/// Sengaja ringkas dan tanpa ekor/panah — TonTon "menyalakan sorotnya", jadi
+/// kesan keluar dari maskot tetap terasa lewat animasi naik + cahayanya.
+/// Teks mengetik huruf demi huruf dengan kursor berkedip.
 class MascotBubble extends StatefulWidget {
   final String text;
-  final BubbleTail tail;
 
-  const MascotBubble({
-    super.key,
-    required this.text,
-    this.tail = BubbleTail.bottom,
-  });
+  const MascotBubble({super.key, required this.text});
 
   @override
   State<MascotBubble> createState() => _MascotBubbleState();
@@ -83,93 +74,26 @@ class _MascotBubbleState extends State<MascotBubble>
   Widget build(BuildContext context) {
     final shown = widget.text.substring(0, _shown.clamp(0, widget.text.length));
     final typing = _shown < widget.text.length;
-    final fromLeft = widget.tail == BubbleTail.left;
-    final fromTop = widget.tail == BubbleTail.top;
-    final Alignment origin = fromLeft
-        ? Alignment.centerLeft
-        : fromTop
-        ? Alignment.bottomCenter
-        : Alignment.topCenter;
-    final Offset slideBegin = fromLeft
-        ? const Offset(-0.25, 0)
-        : fromTop
-        ? const Offset(0, 0.3)
-        : const Offset(0, 0.3);
 
-    final card = GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      radius: 18,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 280),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Flexible(
-              child: Text(
-                shown,
-                style: const TextStyle(fontSize: 14, height: 1.4),
-              ),
-            ),
-            if (typing) ...[const SizedBox(width: 3), const _Caret()],
-          ],
-        ),
-      ),
-    );
-
-    final bubble = Stack(
-      clipBehavior: Clip.none,
-      children: [
-        card,
-        if (widget.tail == BubbleTail.bottom)
-          Positioned(
-            left: 8,
-            top: -1,
-            child: const CustomPaint(
-              size: Size(26, 12),
-              painter: _BubbleTailPainter.down(),
-            ),
-          ),
-        if (widget.tail == BubbleTail.top)
-          Positioned(
-            left: 8,
-            bottom: -1,
-            child: const CustomPaint(
-              size: Size(26, 12),
-              painter: _BubbleTailPainter.down(),
-            ),
-          ),
-        if (widget.tail == BubbleTail.left)
-          const Positioned(
-            left: -13,
-            top: 26,
-            child: CustomPaint(
-              size: Size(14, 18),
-              painter: _BubbleTailPainter.left(),
-            ),
-          ),
-      ],
-    );
-
-    // Animasi "keluar dari maskot": slide + scale mulai dari sisi maskot.
+    // Animasi "sorosan nyala": naik pelan + membesar dari sisi bawah.
     return FadeTransition(
       opacity: CurvedAnimation(parent: _enter, curve: Curves.easeOut),
       child: ScaleTransition(
-        alignment: origin,
+        alignment: Alignment.bottomCenter,
         scale: Tween<double>(
-          begin: 0.72,
+          begin: 0.78,
           end: 1,
         ).animate(CurvedAnimation(parent: _enter, curve: Curves.easeOutBack)),
         child: SlideTransition(
-          position: Tween<Offset>(begin: slideBegin, end: Offset.zero).animate(
-            CurvedAnimation(parent: _enter, curve: Curves.easeOutCubic),
-          ),
+          position:
+              Tween<Offset>(
+                begin: const Offset(0, 0.24),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: _enter, curve: Curves.easeOutCubic),
+              ),
           child: Align(
-            alignment: fromLeft
-                ? Alignment.centerLeft
-                : fromTop
-                ? Alignment.bottomCenter
-                : Alignment.topLeft,
+            alignment: Alignment.topCenter,
             widthFactor: 1,
             heightFactor: 1,
             child: AnimatedBuilder(
@@ -178,7 +102,7 @@ class _MascotBubbleState extends State<MascotBubble>
                 offset: Offset(0, -2 + 4 * _float.value),
                 child: child,
               ),
-              child: bubble,
+              child: _SpotlightBubble(text: shown, typing: typing),
             ),
           ),
         ),
@@ -187,54 +111,71 @@ class _MascotBubbleState extends State<MascotBubble>
   }
 }
 
-/// Ekor bubble. Dua arah: ke bawah (segitiga) dan ke kiri.
-class _BubbleTailPainter extends CustomPainter {
-  final BubbleTail tail;
+/// Sorotan hangat + panel gelap tempat teksnya muncul.
+class _SpotlightBubble extends StatelessWidget {
+  final String text;
+  final bool typing;
 
-  const _BubbleTailPainter.down() : tail = BubbleTail.bottom;
-  const _BubbleTailPainter.left() : tail = BubbleTail.left;
+  const _SpotlightBubble({required this.text, required this.typing});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final fill = Paint()..color = const Color(0x14FFFFFF);
-    final border = Paint()
-      ..color = const Color(0x1AFFFFFF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    if (tail == BubbleTail.bottom) {
-      final path = Path()
-        ..moveTo(2, 0)
-        ..lineTo(22, 0)
-        ..lineTo(8, size.height)
-        ..close();
-      canvas.drawPath(path, fill);
-      canvas.drawLine(const Offset(2, 0), Offset(8, size.height), border);
-      canvas.drawLine(const Offset(22, 0), Offset(8, size.height), border);
-      return;
-    }
-
-    final path = Path()
-      ..moveTo(0, 4)
-      ..lineTo(0, size.height - 4)
-      ..lineTo(size.width, size.height / 2)
-      ..close();
-    canvas.drawPath(path, fill);
-    canvas.drawLine(
-      const Offset(0, 4),
-      Offset(size.width, size.height / 2),
-      border,
-    );
-    canvas.drawLine(
-      Offset(0, size.height - 4),
-      Offset(size.width, size.height / 2),
-      border,
+  Widget build(BuildContext context) {
+    return Container(
+      // Ruang di atas panel buat cahaya sorotannya.
+      padding: const EdgeInsets.only(top: 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: RadialGradient(
+          center: Alignment.topCenter,
+          radius: 1.15,
+          colors: [
+            const Color(0xFFFFE3B4).withValues(alpha: 0.34),
+            const Color(0xFFFFE3B4).withValues(alpha: 0),
+          ],
+        ),
+      ),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 232),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0E13).withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFFFFD6A0).withValues(alpha: 0.45),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFC482).withValues(alpha: 0.22),
+              blurRadius: 22,
+              spreadRadius: 1,
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Flexible(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            if (typing) ...[const SizedBox(width: 3), const _Caret()],
+          ],
+        ),
+      ),
     );
   }
-
-  @override
-  bool shouldRepaint(covariant _BubbleTailPainter oldDelegate) =>
-      oldDelegate.tail != tail;
 }
 
 /// Kursor kecil yang berdenyut saat teks lagi mengetik.

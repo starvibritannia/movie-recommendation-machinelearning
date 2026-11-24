@@ -42,7 +42,7 @@ class _JellyLoaderState extends State<JellyLoader>
   }
 }
 
-/// Blob jelly bergaya TonTon: badan oranye, mata cyan yang sesekali berkedip.
+/// Blob jelly bergaya TonTon: badan oranye, mata putih yang sesekali berkedip.
 class _JellyBlob extends StatelessWidget {
   final AnimationController controller;
 
@@ -87,7 +87,7 @@ class _JellyBlob extends StatelessWidget {
     width: 8,
     height: 12 * blink,
     decoration: BoxDecoration(
-      color: AppColors.tealGlow,
+      color: Colors.white,
       borderRadius: BorderRadius.circular(4),
     ),
   );

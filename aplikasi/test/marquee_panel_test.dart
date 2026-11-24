@@ -30,7 +30,10 @@ void main() {
     );
 
     await tester.pump(const Duration(milliseconds: 2700));
-    await tester.tap(find.text('Cariin Film dong!'), warnIfMissed: false);
+    await tester.tap(
+      find.byKey(const ValueKey('ctaTiket')),
+      warnIfMissed: false,
+    );
     await tester.pump(const Duration(milliseconds: 1500));
     await tester.pump(const Duration(milliseconds: 900));
   }
@@ -119,18 +122,23 @@ void main() {
     );
 
     // Tiket pojok hilang, tiket baru terbentuk & terbang ke slot tape TonTon.
-    expect(find.text('TIKET GENRE'), findsOneWidget);
-    final tiketAkhir = tester.getRect(find.text('TIKET GENRE')).center;
+    final tiketAwal = tester.getRect(find.text('TIKET GENRE')).center;
+
+    // Ditekan bertahap biar pasti kelihatan nyamplung di slot (satu pump
+    // besar di test kadang nggak sejalan sama jam animasi).
+    double dy = tiketAwal.dy;
+    for (var i = 0; i < 20 && dy > 280; i++) {
+      await tester.pump(const Duration(milliseconds: 60));
+      if (find.text('TIKET GENRE').evaluate().isEmpty) break;
+      dy = tester.getRect(find.text('TIKET GENRE')).center.dy;
+    }
+
     expect(
-      (tiketAkhir - tiketSebelum).distance,
+      (Offset(tiketAwal.dx, dy) - tiketSebelum).distance,
       greaterThan(2),
       reason: 'tiket harus berpindah dari pojok papan',
     );
-    expect(
-      tiketAkhir.dy,
-      lessThan(320),
-      reason: 'tiket harus sampai di slot tape TonTon',
-    );
+    expect(dy, lessThan(320), reason: 'tiket harus sampai di slot tape TonTon');
 
     expect(tester.takeException(), isNull, reason: 'transisi overflow');
   });

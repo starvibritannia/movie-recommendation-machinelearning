@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Design token warna NeVie — **Jelly Midnight**.
 ///
 /// Gelap sinematik yang sedikit dihangatkan, panel kaca transparan, aksen
-/// oranye madu (identitas TonTon), plus cyan es yang diambil dari warna wajah
+/// oranye madu (identitas TonTon), plus glow ambient es.
 /// TonTon sebagai aksen sekunder.
 class AppColors {
   AppColors._();
@@ -42,7 +42,7 @@ class AppColors {
   /// Kuning badge popular (dipakai label "10k+", dst).
   static const Color gold = Color(0xFFFFD98A);
 
-  /// Cyan es — diambil dari warna wajah TonTon, dipakai buat glow ambient.
+  /// Glow ambient es (wajah TonTon sekarang putih; ini murni aksen latar).
   static const Color tealGlow = Color(0xFF7DF3FF);
 
   // ---------------- teks ----------------

@@ -105,7 +105,7 @@ class _TvMascotPainter extends CustomPainter {
   static const Color _body = Color(0xFFEDEFF5);
   static const Color _bodyShade = Color(0xFFDFE3EC);
   static const Color _metal = Color(0xFFD3D8E4);
-  static const Color _face = Color(0xFF7DF3FF);
+  static const Color _face = Color(0xFFFFFFFF);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -778,7 +778,8 @@ class _TvMascotPainter extends CustomPainter {
     canvas.drawCircle(
       c.translate(-3.4, -4.4),
       2.6,
-      Paint()..color = Colors.white.withValues(alpha: 0.9),
+      // Bayangan lembut di sudut mata (mata TonTon putih, jadi pakai tinta gelap).
+      Paint()..color = Colors.black.withValues(alpha: 0.16),
     );
   }
 

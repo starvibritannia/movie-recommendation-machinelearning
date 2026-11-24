@@ -99,7 +99,7 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
 
   late final AnimationController _invitePop = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 520),
+    duration: const Duration(milliseconds: 1250),
   );
 
   // ---------------- state panggung ----------------
@@ -246,7 +246,7 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
       if (!mounted) return;
       _pendingTimer = Timer(const Duration(milliseconds: 180), _goSliders);
     });
-    _scheduleSwallow(440);
+    _scheduleSwallow(470);
   }
 
   /// TonTon nelen pas tiketnya nyampe di slot tape.
@@ -274,7 +274,7 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
       if (!mounted) return;
       _pendingTimer = Timer(const Duration(milliseconds: 120), _goKeyword);
     });
-    _scheduleSwallow(440);
+    _scheduleSwallow(470);
   }
 
   void _goKeyword() {
@@ -491,10 +491,7 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
                       top: 2,
                       child: Align(
                         alignment: Alignment.topCenter,
-                        child: MascotBubble(
-                          text: bubbleText,
-                          tail: BubbleTail.top,
-                        ),
+                        child: MascotBubble(text: bubbleText),
                       ),
                     ),
 
@@ -682,26 +679,38 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
 
     final t = _exitT.clamp(0.0, 1.0);
     // Fase 1: papan menggulung, tiket terbentuk di tempatnya.
-    final formT = (t / 0.42).clamp(0.0, 1.0);
+    final formT = (t / 0.40).clamp(0.0, 1.0);
     // Fase 2: tiket meluncur ke slot tape TonTon.
-    final flyT = Curves.easeInOutCubic.transform(
-      ((t - 0.45) / 0.55).clamp(0.0, 1.0),
-    );
-    final pos = Offset.lerp(home, _slotPos(center, mSize), flyT)!;
+    final flyRaw = ((t - 0.42) / 0.58).clamp(0.0, 1.0);
+    // Dicepet pas mendekat, jadi rasanya kena "tarikan" slotnya.
+    final flyT = Curves.easeInCubic.transform(flyRaw);
+    final slot = _slotPos(center, mSize);
 
+    // Bukan garis lurus: ada busuran ke atas biar ototnya kerasa lemparan.
+    final ctrl = Offset.lerp(home, slot, 0.5)! + const Offset(0, -30);
+    final pos = _quadBezier(home, ctrl, slot, flyT);
+
+    // Mengecil mengikuti jarak tempuh, bukan waktu.
+    final total = (slot - home).distance;
+    final travel = total == 0
+        ? 1.0
+        : ((pos - home).distance / total).clamp(0.0, 1.0);
     final scale =
-        (0.35 + 0.65 * Curves.easeOutBack.transform(formT)) * (1 - flyT * 0.5);
-    final opacity = formT * (1 - flyT * 0.2);
+        (0.35 + 0.65 * Curves.easeOutBack.transform(formT)) *
+        (1 - travel * 0.42);
+
+    // Miring pas lepas, lurus pas nyamplung, plus sedikit seliweran.
+    final tilt = -0.12 + flyT * 0.14 + math.sin(flyT * math.pi) * 0.06;
 
     return Positioned(
-      left: pos.dx - 60,
-      top: pos.dy - 17,
+      left: pos.dx - 59,
+      top: pos.dy - 13,
       child: Opacity(
-        opacity: opacity.clamp(0.0, 1.0),
+        opacity: formT * (1 - flyRaw * 0.25),
         child: Transform.scale(
           scale: scale,
           child: Transform.rotate(
-            angle: -0.12 + flyT * 0.18,
+            angle: tilt,
             child: _TicketStub(label: label),
           ),
         ),
@@ -709,8 +718,15 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
     );
   }
 
+  /// Titik tengah kurva kuadratik (buat lintasan lemparan tiket).
+  Offset _quadBezier(Offset a, Offset b, Offset c, double t) {
+    final ab = Offset.lerp(a, b, t)!;
+    final bc = Offset.lerp(b, c, t)!;
+    return Offset.lerp(ab, bc, t)!;
+  }
+
   /// Cahaya slot tape TonTon pas tiket masuk.
-  Widget _buildSlotGlow(Offset center, double mSize) {
+  Widget _buildSlotGlow(Offset center, double mSize, {double opacity = 1}) {
     final t = _exitT.clamp(0.0, 1.0);
     // Baru menyala pas tiket nyaris nyampe.
     final glow = ((t - 0.6) / 0.4).clamp(0.0, 1.0);
@@ -721,22 +737,27 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
       left: slot.dx - w / 2,
       top: slot.dy - w * 0.17,
       child: IgnorePointer(
-        child: Container(
-          width: w,
-          height: w * 0.34,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(w * 0.17),
-            border: Border.all(
-              color: AppColors.accentLight.withValues(alpha: 0.2 + glow * 0.8),
-              width: 1.6 + glow,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accentLight.withValues(alpha: 0.4 * glow),
-                blurRadius: 14 + glow * 16,
-                spreadRadius: glow * 2,
+        child: Opacity(
+          opacity: opacity,
+          child: Container(
+            width: w,
+            height: w * 0.34,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(w * 0.17),
+              border: Border.all(
+                color: AppColors.accentLight.withValues(
+                  alpha: 0.2 + glow * 0.8,
+                ),
+                width: 1.6 + glow,
               ),
-            ],
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accentLight.withValues(alpha: 0.4 * glow),
+                  blurRadius: 14 + glow * 16,
+                  spreadRadius: glow * 2,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -770,39 +791,80 @@ class _MascotPageState extends State<MascotPage> with TickerProviderStateMixin {
   }
 
   // ---------------------------------------------------------------- tombol
-  /// Posisi tombol yang "diberikan" TonTon: di sisi kanan badannya.
+  /// Posisi tombol "diberikan" TonTon: tepat di bawah badannya, seolah jatuh
+  /// di dalam kolam cahaya proyektor.
   Offset _inviteTarget() {
     final center = _mascotCenter(_stageSize);
     final mSize = _mascotSize(_stageSize);
     return Offset(
-      (center.dx + mSize * 0.68).clamp(92, _stageSize.width - 92),
-      (center.dy + mSize * 0.50).clamp(132, _stageSize.height - 152),
+      center.dx,
+      (center.dy + mSize / 2 + 116).clamp(170, _stageSize.height - 148),
     );
   }
 
   Widget _buildInvite() {
     final floatT = _float.value * math.pi * 2;
-    final dy = math.sin(floatT) * 6;
-    final t = Curves.easeOutBack.transform(_invitePop.value);
+    final bob = math.sin(floatT) * 6;
+    final v = _invitePop.value;
+
+    // 1) slot tape nyala, 2) tiket terdorong keluar dari slotnya, 3) tiket
+    // mengembang jadi tombol ajakan.
+    final slotT = Curves.easeOut.transform((v / 0.22).clamp(0.0, 1.0));
+    final emergeRaw = ((v - 0.28) / 0.34).clamp(0.0, 1.0);
+    final emerge = Curves.easeInOutCubic.transform(emergeRaw);
+    final stubFade = 1 - ((v - 0.60) / 0.22).clamp(0.0, 1.0);
+    final ctaRaw = ((v - 0.56) / 0.44).clamp(0.0, 1.0);
+    final ctaT = Curves.easeOutBack.transform(ctaRaw);
+
     final center = _mascotCenter(_stageSize);
     final mSize = _mascotSize(_stageSize);
-    // Tombol meluncur keluar dari badan TonTon ke posisi di sampingnya.
-    final pos = Offset.lerp(
-      center + Offset(0, mSize * 0.08),
-      _inviteTarget(),
-      t,
-    )!;
+    final slot = _slotPos(center, mSize);
+    final target = _inviteTarget();
 
-    return Positioned(
-      left: pos.dx - 86,
-      top: pos.dy - 26 + dy,
-      child: Opacity(
-        opacity: t.clamp(0.0, 1.0),
-        child: Transform.scale(
-          scale: 0.35 + 0.65 * t,
-          alignment: Alignment.center,
-          child: _BouncyButton(label: AppStrings.mascotInvite, onTap: _goGenre),
-        ),
+    // Stub bergerak dari slot ke posisi tombol.
+    final stub = Offset.lerp(slot, target, emerge)!;
+
+    // Ukuran tombol tiket, disesuaiin sama lebar panggung.
+    final ctaW = math.min(240.0, _stageSize.width - 56);
+    final ctaH = ctaW * 0.334;
+
+    return Positioned.fill(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Slot tape TonTon menyala pas dibuka.
+          _buildSlotGlow(center, mSize, opacity: slotT),
+
+          // Stub tiket yang terdorong keluar dari dalam slot.
+          Positioned(
+            left: stub.dx - 59,
+            top: stub.dy - 13,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: (emergeRaw * 4).clamp(0.0, 1.0) * stubFade,
+                child: Transform.scale(
+                  scale: 0.32 + 0.68 * Curves.easeOutBack.transform(emergeRaw),
+                  alignment: Alignment.topCenter,
+                  child: _TicketStub(label: AppStrings.ticketEntry),
+                ),
+              ),
+            ),
+          ),
+
+          // Stub mengembang jadi tombol ajakan.
+          Positioned(
+            left: target.dx - ctaW / 2,
+            top: target.dy - ctaH / 2 + bob,
+            child: Opacity(
+              opacity: ctaRaw.clamp(0.0, 1.0),
+              child: Transform.scale(
+                scale: 0.45 + 0.55 * ctaT,
+                alignment: Alignment.topCenter,
+                child: _TicketCta(onTap: _goGenre, width: ctaW),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1435,9 +1497,32 @@ class _RollClipper extends CustomClipper<Rect> {
       oldDelegate.t != t || oldDelegate.room != room;
 }
 
-/// Popup daftar rekomendasi.
-class _ResultsSheet extends StatelessWidget {
+/// Popup daftar rekomendasi: layar bioskop yang nyala dari berkas proyektor.
+class _ResultsSheet extends StatefulWidget {
   const _ResultsSheet();
+
+  @override
+  State<_ResultsSheet> createState() => _ResultsSheetState();
+}
+
+class _ResultsSheetState extends State<_ResultsSheet>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _proj = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 980),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _proj.forward();
+  }
+
+  @override
+  void dispose() {
+    _proj.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1457,59 +1542,212 @@ class _ResultsSheet extends StatelessWidget {
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             border: Border(top: BorderSide(color: AppColors.glassBorder)),
           ),
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.glassBorder,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        AppStrings.mascotDone,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+          // AnimatedBuilder wajib ada: kalau nggak, nggak ada yang nungguin
+          // controller jadi layarnya cuma gerak pas ada rebuild lain.
+          child: AnimatedBuilder(
+            animation: _proj,
+            builder: (context, _) {
+              final t = _proj.value;
+              // 1) berkas proyektor nyala, 2) layar membesar, 3) isinya muncul.
+              final growRaw = ((t - 0.30) / 0.70).clamp(0.0, 1.0);
+              var beam = Curves.easeOutCubic.transform(
+                ((t - 0.04) / 0.34).clamp(0.0, 1.0),
+              );
+              // Proyektor lagi "pemanasan": berkasnya kedap kedip dulu.
+              if (beam > 0 && beam < 1) {
+                beam *= 0.84 + 0.16 * math.sin(t * 52);
+              }
+              final grow = Curves.easeOutCubic.transform(growRaw);
+              final reveal = Curves.easeOut.transform(
+                ((t - 0.55) / 0.45).clamp(0.0, 1.0),
+              );
+              // Layar mengembung sedikit pas besar, biar ada tendangan halus.
+              final pop = 1 + 0.035 * math.sin(growRaw * math.pi);
+
+              return LayoutBuilder(
+                builder: (context, c) {
+                  final fullW = (c.maxWidth - 24).clamp(0.0, 520.0);
+                  final fullH = (c.maxHeight - 30).clamp(0.0, 900.0);
+                  final w = fullW * (0.30 + 0.70 * grow) * pop;
+                  final h = fullH * (0.30 + 0.70 * grow) * pop;
+
+                  return Stack(
+                    children: [
+                      // Handle geser di bibir atas panggung.
+                      Positioned(
+                        top: 2,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Opacity(
+                            opacity: 0.25 + 0.75 * reveal,
+                            child: Container(
+                              width: 44,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: AppColors.glassBorder,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    Text(
-                      '${movies.length} film',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
+
+                      // Berkas cahaya proyektor.
+                      Positioned(
+                        top: 26,
+                        left: 0,
+                        right: 0,
+                        height: 360,
+                        child: IgnorePointer(
+                          child: Opacity(
+                            opacity: beam,
+                            child: ClipPath(
+                              clipper: _BeamClipper(halfBottom: w / 2 + 46),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    stops: const [0, 0.55, 1],
+                                    colors: [
+                                      const Color(
+                                        0xFFFFF3DA,
+                                      ).withValues(alpha: 0.42),
+                                      const Color(
+                                        0xFFFFE2B4,
+                                      ).withValues(alpha: 0.13),
+                                      const Color(
+                                        0xFFFFE2B4,
+                                      ).withValues(alpha: 0),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView.separated(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                  itemCount: movies.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final movie = movies[index];
-                    return MovieCard(
-                      movie: movie,
-                      rank: index + 1,
-                      isSaved: watchlist.isSaved(movie.movieId),
-                      onToggleBookmark: () => toggleWatchlist(context, movie),
-                      onTap: () => _openDetail(context, movie),
-                    );
-                  },
-                ),
-              ),
-            ],
+
+                      // Layar yang membesar dari titik cahaya.
+                      Center(
+                        child: SizedBox(
+                          key: const ValueKey('layarProyektor'),
+                          width: w,
+                          height: h,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: Stack(
+                              children: [
+                                // Kain layar + cahaya pinggirnya.
+                                DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0A0E13),
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFFFFD9A0,
+                                      ).withValues(alpha: 0.25 + 0.6 * grow),
+                                      width: 1.2 + grow,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(
+                                          0xFFFFC98A,
+                                        ).withValues(alpha: 0.35 * grow),
+                                        blurRadius: 24 + 24 * grow,
+                                        spreadRadius: 2 * grow,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Transform.translate(
+                                  offset: Offset(0, 12 * (1 - reveal)),
+                                  child: Opacity(
+                                    opacity: reveal,
+                                    child: Column(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            14,
+                                            14,
+                                            14,
+                                            8,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const Expanded(
+                                                child: Text(
+                                                  AppStrings.mascotDone,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ),
+                                              Text(
+                                                '${movies.length} film',
+                                                style: const TextStyle(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: ListView.separated(
+                                            controller: scrollController,
+                                            padding: const EdgeInsets.fromLTRB(
+                                              14,
+                                              4,
+                                              14,
+                                              20,
+                                            ),
+                                            itemCount: movies.length,
+                                            separatorBuilder: (_, _) =>
+                                                const SizedBox(height: 12),
+                                            itemBuilder: (context, index) {
+                                              final movie = movies[index];
+                                              return MovieCard(
+                                                movie: movie,
+                                                rank: index + 1,
+                                                isSaved: watchlist.isSaved(
+                                                  movie.movieId,
+                                                ),
+                                                onToggleBookmark: () =>
+                                                    toggleWatchlist(
+                                                      context,
+                                                      movie,
+                                                    ),
+                                                onTap: () =>
+                                                    _openDetail(context, movie),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Bola lampu proyektor, selalu di atas layar.
+                      Positioned(
+                        top: 8,
+                        left: c.maxWidth / 2 - 11,
+                        child: IgnorePointer(child: _ProjectorLamp(beam: beam)),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
           ),
         );
       },
@@ -1521,4 +1759,206 @@ class _ResultsSheet extends StatelessWidget {
       context,
     ).push(MaterialPageRoute(builder: (_) => DetailPage(movie: movie)));
   }
+}
+
+/// Klip berkas proyektor: meruncing dari titik lampu ke lebar layar.
+class _BeamClipper extends CustomClipper<Path> {
+  final double halfBottom;
+
+  const _BeamClipper({required this.halfBottom});
+
+  @override
+  Path getClip(Size size) {
+    final cx = size.width / 2;
+    return Path()
+      ..moveTo(cx - 7, 0)
+      ..lineTo(cx + 7, 0)
+      ..lineTo(cx + halfBottom, size.height)
+      ..lineTo(cx - halfBottom, size.height)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant _BeamClipper oldDelegate) =>
+      oldDelegate.halfBottom != halfBottom;
+}
+
+/// Bola lampu proyektor yang nyala saat berkasnya keluar.
+class _ProjectorLamp extends StatelessWidget {
+  final double beam;
+
+  const _ProjectorLamp({required this.beam});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 22,
+      height: 16,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(5),
+        color: const Color(0xFF1A2129),
+        border: Border.all(
+          color: const Color(0xFFFFD9A0).withValues(alpha: 0.25 + 0.65 * beam),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFE6C0).withValues(alpha: 0.85 * beam),
+            blurRadius: 14 + 18 * beam,
+            spreadRadius: 2 * beam,
+          ),
+        ],
+      ),
+      child: Center(
+        child: Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFFFFF6E2).withValues(alpha: 0.3 + 0.7 * beam),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFFE9C4).withValues(alpha: 0.8 * beam),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tombol ajakan berbentuk tiket masuk: ada gigiran (notch) di kiri-kanan,
+/// garis robek, dan label "TIKET MASUK".
+class _TicketCta extends StatelessWidget {
+  final VoidCallback onTap;
+  final double width;
+
+  const _TicketCta({required this.onTap, this.width = 240});
+
+  @override
+  Widget build(BuildContext context) {
+    final h = width * 0.334;
+    final stub = width * 0.26;
+
+    return JellyPress(
+      key: const ValueKey('ctaTiket'),
+      onTap: onTap,
+      pressedScale: 0.05,
+      child: SizedBox(
+        width: width,
+        height: h,
+        child: CustomPaint(
+          painter: _TicketBodyPainter(stubX: stub),
+          child: Row(
+            children: [
+              SizedBox(
+                width: stub,
+                child: Center(
+                  child: Icon(
+                    Icons.confirmation_number_rounded,
+                    size: width * 0.1,
+                    color: const Color(0xFF6B3410),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    AppStrings.ticketEntry,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: const Color(0xFF3A1B05),
+                      fontSize: width * 0.067,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Badan tiket: sudut membulat + gigiran di sisi kiri-kanan + garis robek.
+class _TicketBodyPainter extends CustomPainter {
+  final double stubX;
+
+  const _TicketBodyPainter({required this.stubX});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _ticketPath(size);
+
+    // Bayangan lembut di bawah tiket.
+    canvas.drawPath(
+      path.shift(const Offset(0, 6)),
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.35)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFE7C4), Color(0xFFFFB765)],
+        ).createShader(Offset.zero & size),
+    );
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = const Color(0xFF8A4A12).withValues(alpha: 0.35),
+    );
+
+    // Garis robek vertikal di antara stub dan badan tiket.
+    final dash = Paint()
+      ..color = const Color(0xFF8A4A12).withValues(alpha: 0.45)
+      ..strokeWidth = 1.2;
+    for (var y = size.height * 0.18; y < size.height * 0.82; y += 7) {
+      canvas.drawLine(Offset(stubX, y), Offset(stubX, y + 3.6), dash);
+    }
+  }
+
+  Path _ticketPath(Size size) {
+    final w = size.width;
+    final h = size.height;
+    final r = 12.0;
+    final nr = math.min(9.0, h * 0.16);
+    final cy = h / 2;
+    final k = nr * 0.5523;
+
+    return Path()
+      ..moveTo(r, 0)
+      ..lineTo(w - r, 0)
+      ..arcToPoint(Offset(w, r), radius: Radius.circular(r))
+      ..lineTo(w, cy - nr)
+      // Gigiran kanan, cekung ke dalam.
+      ..cubicTo(w - k, cy - nr, w - nr, cy - k, w - nr, cy)
+      ..cubicTo(w - nr, cy + k, w - k, cy + nr, w, cy + nr)
+      ..lineTo(w, h - r)
+      ..arcToPoint(Offset(w - r, h), radius: Radius.circular(r))
+      ..lineTo(r, h)
+      ..arcToPoint(Offset(0, h - r), radius: Radius.circular(r))
+      ..lineTo(0, cy + nr)
+      // Gigiran kiri.
+      ..cubicTo(k, cy + nr, nr, cy + k, nr, cy)
+      ..cubicTo(nr, cy - k, k, cy - nr, 0, cy - nr)
+      ..lineTo(0, r)
+      ..arcToPoint(Offset(r, 0), radius: Radius.circular(r))
+      ..close();
+  }
+
+  @override
+  bool shouldRepaint(covariant _TicketBodyPainter oldDelegate) =>
+      oldDelegate.stubX != stubX;
 }

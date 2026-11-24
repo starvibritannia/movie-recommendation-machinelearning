@@ -36,10 +36,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 2700));
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('Cariin Film dong!'), findsOneWidget);
+    expect(find.byKey(const ValueKey('ctaTiket')), findsOneWidget);
 
     // Buka genre.
-    await tester.tap(find.text('Cariin Film dong!'), warnIfMissed: false);
+    await tester.tap(
+      find.byKey(const ValueKey('ctaTiket')),
+      warnIfMissed: false,
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 1300));

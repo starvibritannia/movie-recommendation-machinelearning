@@ -46,11 +46,12 @@ class AppStrings {
   // Teks percakapan maskot (halaman utama).
   // ----------------------------------------------------------------------------
   static const String mascotGreeting =
-      'Hai! Aku TonTon, maskot NeVie. Hari ini mau nonton apa nih?';
+      'Halo! Aku TonTon. Lagi pengin nonton apa nih?';
   static const String mascotInvite = 'Cariin Film dong!';
-  static const String mascotTapInvite = 'Ketik tombolnya, yuk!';
+  static const String mascotTapInvite =
+      'Nih, tiket masuknya udah kusiapin. Ketuk aja ya.';
   static const String mascotAskGenre =
-      'Pilih genre yang kamu suka, boleh lebih dari satu ya.';
+      'Genre apa aja yang kamu suka? Boleh pilih lebih dari satu.';
   static const String mascotGenreConfirm = 'Oke, lanjut!';
   // Judul papan marquee (genre, slider, kata kunci).
   static const String marqueeGenreTitle = 'PILIH GENRE';
@@ -64,11 +65,13 @@ class AppStrings {
   // Label tiket yang dibentuk pas papan digulung sebelum pindah menu.
   static const String ticketGenre = 'TIKET GENRE';
   static const String ticketSlider = 'TIKET SELERA';
-  static const String mascotAbsorb = 'Aku serap yang kamu pilih ya...';
-  static const String mascotSlidersTitle = 'Atur selera kamu';
+  static const String ticketEntry = 'TIKET MASUK';
+  static const String mascotAbsorb = 'Oke, aku catat dulu ya...';
+  static const String mascotSlidersTitle =
+      'Geser slidenya sampai pas, nggak usah buru-buru.';
   static const String mascotSliderConfirm = 'Siap, lanjut!';
   static const String mascotKeywordAsk =
-      'Terakhir, ketik tema atau kata kunci filmnya...';
+      'Terakhir nih. Ada kata kunci yang kamu pengen? Misalnya "ruang angkasa".';
   static const String mascotAskRating =
       'Oke. Nah, rating minimal berapa yang kamu mau?';
   static const String mascotAskRuntime =
@@ -78,10 +81,11 @@ class AppStrings {
   static const String mascotAskExtra =
       'Terakhir, mau berapa rekomendasi dan ada kata kunci khusus?';
   static const String mascotThinking =
-      'Hmm, biar aku mikir dan cariin yang paling cocok...';
-  static const String mascotDone = 'Nih hasilnya! Pilih yang paling kabari.';
+      'Tunggu bentar, aku nyari yang paling cocok...';
+  static const String mascotDone =
+      'Kelar! Ini film-film yang paling cocok buat kamu.';
   static const String mascotEmpty =
-      'Aduh, nggak ada yang cocok. Coba longgarkan filter kamu ya.';
+      'Aduh, nggak ada yang cocok. Coba longgarkan filternya ya.';
   static const String mascotNext = 'Lanjut';
   static const String mascotBack = 'Kembali';
   static const String mascotSearch = 'Cariin dong';
