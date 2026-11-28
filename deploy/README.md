@@ -45,9 +45,12 @@ Harus balikin `{"status":"ok", ...}`. Kalau ini belum jalan, selesaikan dulu.
 2. Isi data, verifikasi email, lalu **verifikasi identitas dengan kartu**
    (kredit/debit atau PayPal). Ini cuma verifikasi, **nggak ditagih** selama kamu
    tetap di batas gratis.
-3. Catat: **region** yang kamu pilih. Buat latency dari Indonesia, `id-jakarta-1`
-   paling dekat — tapi kalau kapasitasnya habis, pakai region lain
-   (`ap-singapore-1`, `us-phoenix-1`, dll).
+3. **Pilih Home Region dengan hati-hati.** Instance gratis WAJIB dibuat di home
+   region, dan **home region nggak bisa diganti** setelah akun jadi. Buat latency
+   dari Indonesia, `ap-jakarta-1` paling dekat, `ap-singapore-1` jadi cadangan.
+4. Kartu yang dipakai: **kartu kredit, atau debit yang bisa dipakai seperti
+   kredit**. Debit PIN-only, kartu virtual, prepaid, dan single-use **ditolak**.
+   Oracle bisa menahan dana sementara (hold) 3–5 hari, itu bukan tagihan.
 
 > ⚠️ Yang paling sering bikin gagal: saat bikin instance muncul
 > *"Out of capacity for VM.Standard.A1.Flex"*. Itu berarti kuota ARM gratis di
@@ -61,11 +64,12 @@ Harus balikin `{"status":"ok", ...}`. Kalau ini belum jalan, selesaikan dulu.
 2. Isi:
    - **Name**: `nevie-api`
    - **Image**: Ubuntu 24.04 (ARM)
-   - **Shape**: `VM.Standard.A1.Flex` → **4 OCPU + 12 GB RAM**
-     (batas gratis total 4 OCPU & 24 GB, jadi ini masih aman dan lega buat
+   - **Shape**: `VM.Standard.A1.Flex` → **2 OCPU + 12 GB RAM**
+     (itu plafon Always Free: total 2 OCPU & 12 GB per akun, Oracle menghitungnya
+     sebagai 1.500 OCPU-jam + 9.000 GB-jam per bulan. RAM 12 GB sudah lega buat
      bundle model 154 MB)
-   - **Boot volume**: biarkan default (~47 GB) atau naikkan ke 100 GB
-     (total gratis 200 GB)
+   - **Boot volume**: biarkan default (**50 GB**), total gratis 200 GB
+   - Pilih image **Ubuntu 24.04 biasa, bukan Minimal** (Minimal bermasalah di ARM)
 3. **SSH keys**: pilih *Generate a key pair for me*, lalu **simpan file `.key`**
    yang diunduh. Tanpa itu kamu nggak bisa masuk ke server.
 4. **Public IP**: pastikan dapat alamat IP publik (ephemeral = gratis).
@@ -90,6 +94,20 @@ pas memuat bundle, jadi kalau bisa pakai A1.
 
 > ❌ **Jangan** buka port `8000`. Backend cuma boleh dikenal oleh Caddy di dalam
 > jaringan Docker. Kalau dibuka, siapa pun bisa langsung menyentuh API tanpa TLS.
+
+> 🔎 Ada **dua firewall**: Security List di console, dan `iptables` di dalam
+> Ubuntu. Kalau port masih nggak bisa diakses padahal security list sudah benar,
+> cek yang di dalam server:
+> ```bash
+> sudo iptables -L INPUT -n --line-numbers | head
+> ```
+> Oracle Ubuntu image punya aturan bawaan yang ketat. Kalau perlu, izinkan:
+> ```bash
+> sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+> sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+> sudo apt install -y iptables-persistent
+> sudo netfilter-persistent save
+> ```
 
 ---
 
@@ -239,7 +257,7 @@ Hal yang perlu diperhatikan:
   dari satu — Dockerfile sudah memaksakan `--workers 1`.
 - **Sertifikat**: Caddy memperpanjang otomatis. Kalau gagal, biasanya karena
   DNS belum propagasi saat pertama kali start → tinggal `docker compose restart caddy`.
-- **Biaya**: pastikan tidak melewati batas gratis (4 OCPU A1, 24 GB RAM, 200 GB disk,
+- **Biaya**: pastikan tidak melewati batas gratis (2 OCPU A1, 12 GB RAM, 200 GB disk,
   10 TB egress/bulan). Di Always Free, pemakaian di atas itu **ditagih**.
 - **Idle**: Oracle boleh "menarik kembali" sumber daya Always Free yang lama
   nggak terpakai. Kalau server ini mau hidup terus, sempatkan cek balaiknya
@@ -256,6 +274,7 @@ Hal yang perlu diperhatikan:
 | 502 Bad Gateway pas pertama start | Model lagi dimuat | Tunggu ~1 menit, cek `docker compose logs api` |
 | Sertifikat nggak jadi (`DNS problem`) | DNS belum propagasi / A record salah | Cek `dig api.domain`, lalu restart Caddy |
 | HP nggak bisa konek | Port 443 belum dibuka / DNS | Cek security list + `dig`, tes pakai data seluler |
+| Port 80/443 tetap ketutup padahal security list OK | `iptables` bawaan Ubuntu Oracle | Lihat catatan dua firewall di bagian 3 |
 | Aplikasi masih hit IP lokal | Lupa `--dart-define` | Build ulang dengan `API_BASE_URL` yang benar |
 
 ---
@@ -263,7 +282,7 @@ Hal yang perlu diperhatikan:
 ## 10. Buku besar langkah (checklist)
 
 - [ ] Backend lokal sehat (`/health` OK)
-- [ ] Akun Oracle + instance A1 (4 OCPU / 12 GB) + simpan SSH key
+- [ ] Akun Oracle + instance A1 (2 OCPU / 12 GB) + simpan SSH key
 - [ ] Security list: buka 22, 80, 443 — **port 8000 tertutup**
 - [ ] Domain + A record → IP publik (propagasi beres)
 - [ ] Docker terpasang, `deploy/.env` terisi
